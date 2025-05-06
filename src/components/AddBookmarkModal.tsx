@@ -72,7 +72,7 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
         handleClose();
       }
     };
-
+    
     window.addEventListener('keydown', handleEscKey);
     document.addEventListener('mousedown', handleClickOutside);
     
@@ -81,7 +81,7 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [onClose]);
-
+  
   // Controlled closing with animation
   const handleClose = () => {
     setIsClosing(true);
@@ -111,40 +111,117 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
     setError(null);
 
     try {
-      // This would normally call a backend service to fetch metadata
-      // For this example, we'll simulate it with a timeout
-      const response = await new Promise<{
-        title: string;
-        description: string;
-        image: string;
-        favicon: string;
-        suggestedTags: string[];
-      }>((resolve) => {
+      // Use LinkPreview API or OpenGraph scraper to get metadata
+      const apiUrl = `https://api.linkpreview.net/?key=YOUR_API_KEY&q=${encodeURIComponent(url)}`;
+      
+      // For this demo, we'll simulate the response with more realistic data
+      // In a production app, you would use a real API call:
+      // const response = await fetch(apiUrl);
+      // const data = await response.json();
+      
+      // Extract domain for demo purposes
+      const domain = new URL(url).hostname;
+      
+      // Simulate API response
+      const data = await new Promise<any>((resolve) => {
         setTimeout(() => {
-          // Extract domain for demo purposes
-          const domain = new URL(url).hostname;
+          // Try to determine the site type for better defaults
+          const isGithub = domain.includes('github');
+          const isYoutube = domain.includes('youtube') || domain.includes('youtu.be');
+          const isTwitter = domain.includes('twitter') || domain.includes('x.com');
+          const isMedium = domain.includes('medium');
+          const isNews = domain.includes('news') || domain.includes('bbc') || 
+                        domain.includes('cnn') || domain.includes('nytimes');
+          
           const siteName = domain.replace('www.', '').split('.')[0];
+          const firstLetter = siteName.charAt(0).toUpperCase();
+          const capitalized = firstLetter + siteName.slice(1);
+          
+          // Default values that will be used if the API doesn't return anything
+          const defaultTitle = `${capitalized} - ${isGithub ? 'Repository' : 
+            isYoutube ? 'Video' : isTwitter ? 'Post' : isNews ? 'Article' : 'Website'}`;
+          
+          // Get a reasonable favicon
+          const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+          
+          // Get a better default image based on the domain
+          let imageUrl = '';
+          if (isGithub) {
+            imageUrl = 'https://github.githubassets.com/images/modules/open_graph/github-mark.png';
+          } else if (isYoutube) {
+            imageUrl = 'https://www.youtube.com/img/desktop/yt_1200.png';
+          } else if (isTwitter) {
+            imageUrl = 'https://abs.twimg.com/responsive-web/web/icon-default.3c3b2244.png';
+          } else if (isMedium) {
+            imageUrl = 'https://miro.medium.com/max/1200/1*jfdwtvU6V6g99q3G7gq7dQ.png';
+          } else {
+            // Default image or generate a colorful placeholder
+            imageUrl = `https://via.placeholder.com/1200x630/${Math.floor(Math.random()*16777215).toString(16)}/ffffff?text=${encodeURIComponent(capitalized)}`;
+          }
+          
+          // Generate some suitable tags based on the domain
+          const suggestedTags = [];
+          if (isGithub) suggestedTags.push('development', 'github', 'code');
+          else if (isYoutube) suggestedTags.push('video', 'youtube', 'media');
+          else if (isTwitter) suggestedTags.push('social', 'twitter');
+          else if (isNews) suggestedTags.push('news', 'article');
+          else suggestedTags.push('web', siteName.toLowerCase());
+          
+          // Add a few general tags
+          suggestedTags.push('bookmark', 'link');
+          
+          // Generate a plausible description
+          const descriptions = [
+            `A great resource about ${siteName}`,
+            `Information and resources from ${capitalized}`,
+            `Visit ${capitalized} for more information`,
+            `${capitalized} - ${isGithub ? 'Code repository' : isYoutube ? 'Video content' : 
+              isTwitter ? 'Social media post' : isNews ? 'News article' : 'Web resource'}`
+          ];
           
           resolve({
-            title: `${siteName.charAt(0).toUpperCase() + siteName.slice(1)} - Sample Page`,
-            description: `This is an automatically generated description for ${domain}`,
-            image: 'https://via.placeholder.com/1200x630',
-            favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
-            suggestedTags: ['web', domain.split('.')[0], 'new']
+            title: defaultTitle,
+            description: descriptions[Math.floor(Math.random() * descriptions.length)],
+            image: imageUrl,
+            favicon: faviconUrl,
+            url: url,
+            siteName: capitalized,
+            suggestedTags: suggestedTags
           });
-        }, 1000);
+        }, 1500);
       });
 
       // Update form with metadata
-      setTitle(response.title);
-      setDescription(response.description);
-      setImageUrl(response.image);
-      setFavicon(response.favicon);
-      setTagSuggestions(response.suggestedTags.filter(tag => !tagNames.includes(tag)));
+      setTitle(data.title || '');
+      setDescription(data.description || '');
+      setImageUrl(data.image || '');
+      setFavicon(data.favicon || '');
+      
+      // Filter out tags that already exist in the user's tag collection
+      const newSuggestions = data.suggestedTags?.filter((tag: string) => !tagNames.includes(tag)) || [];
+      setTagSuggestions(newSuggestions);
       
       // Set default category if none selected
       if (!category && categories.length > 0) {
-        setCategory(categories[0].id);
+        // Try to determine a good default category
+        const url = new URL(data.url);
+        const hostname = url.hostname.toLowerCase();
+        
+        let defaultCategory = '';
+        
+        if (hostname.includes('github') || hostname.includes('stackoverflow') || 
+            hostname.includes('dev.to') || hostname.includes('gitlab')) {
+          defaultCategory = categories.find(c => c.name.toLowerCase() === 'development')?.id || '';
+        } else if (hostname.includes('behance') || hostname.includes('dribbble') || 
+                  hostname.includes('figma') || hostname.includes('sketch')) {
+          defaultCategory = categories.find(c => c.name.toLowerCase() === 'design')?.id || '';
+        } else if (hostname.includes('youtube') || hostname.includes('vimeo') || 
+                  hostname.includes('netflix') || hostname.includes('spotify')) {
+          defaultCategory = categories.find(c => c.name.toLowerCase() === 'entertainment')?.id || '';
+        }
+        
+        // If no match, use the first category
+        setCategory(defaultCategory || (categories.length > 0 ? categories[0].id : ''));
       }
       
       // Move to next step
@@ -152,6 +229,12 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
     } catch (error) {
       console.error('Error fetching metadata:', error);
       setError('Failed to retrieve information from this URL. Please fill in details manually.');
+      
+      // Still proceed to step 2, but with minimal info
+      const domain = new URL(url).hostname;
+      setTitle(domain);
+      setFavicon(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
+      setActiveStep(2);
     } finally {
       setIsRetrieving(false);
     }
@@ -170,10 +253,10 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
       setError('Title is required');
       return;
     }
-
+    
     setIsLoading(true);
     setError(null);
-
+    
     try {
       const bookmarkData = {
         url,
@@ -184,7 +267,7 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
         imageUrl,
         favicon
       };
-
+      
       await onAdd(bookmarkData);
     } catch (error) {
       console.error('Error saving bookmark:', error);
@@ -192,7 +275,7 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
       setIsLoading(false);
     }
   };
-
+  
   // Handle tag management
   const addTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
@@ -200,11 +283,11 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
       setNewTag('');
     }
   };
-
+  
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
-
+  
   const addSuggestedTag = (tag: string) => {
     if (!tags.includes(tag)) {
       setTags([...tags, tag]);
@@ -235,7 +318,7 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
   const renderStepContent = () => {
     switch (activeStep) {
       case 1:
-        return (
+  return (
           <div className="space-y-4">
             <div>
               <label htmlFor="url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -259,8 +342,8 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
               <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                 Enter the URL of the website you want to bookmark
               </p>
-            </div>
-            
+        </div>
+        
             <div className="flex justify-between pt-4">
               <Button
                 variant="tertiary"
@@ -289,7 +372,7 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
             <div>
               <label htmlFor="url-preview" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 URL
-              </label>
+            </label>
               <div className="flex items-center rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 bg-gray-50 dark:bg-gray-700">
                 {favicon && (
                   <img 
@@ -299,26 +382,26 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                     onError={(e) => (e.currentTarget.style.display = 'none')}
                   />
                 )}
-                <input
+              <input
                   type="url"
                   id="url-preview"
-                  value={url}
+                value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   className="block w-full bg-transparent border-none focus:ring-0 focus:outline-none dark:text-white"
                 />
-              </div>
             </div>
-            
+          </div>
+          
             {/* Title */}
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Title
-              </label>
-              <input
-                type="text"
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+            </label>
+            <input
+              type="text"
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
                 className="block w-full border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white py-2 px-3 transition-all duration-200"
               />
             </div>
@@ -334,90 +417,90 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
                 className="block w-full border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white resize-none py-2 px-3 transition-all duration-200"
-              />
-            </div>
-            
+            />
+          </div>
+          
             {/* Category */}
             <div>
               <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Category
-              </label>
-              <select
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
+              Category
+            </label>
+            <select
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
                 className="block w-full border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white py-2 pl-3 pr-10 transition-all duration-200"
-              >
+            >
                 <option value="">Select a category</option>
                 {categories.map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-            
+              ))}
+            </select>
+          </div>
+          
             {/* Tags */}
             <div>
               <label htmlFor="tags" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Tags
-              </label>
+              Tags
+            </label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {tags.map(tag => (
-                  <span 
-                    key={tag}
+                <span
+                  key={tag}
                     className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300"
-                  >
-                    {tag}
-                    <button
-                      type="button"
+                >
+                  {tag}
+                  <button
+                    type="button"
                       className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full text-primary-400 hover:text-primary-600 dark:text-primary-300 dark:hover:text-primary-100 focus:outline-none"
                       onClick={() => removeTag(tag)}
-                    >
+                  >
                       <Icon name="close" size="sm" />
-                    </button>
-                  </span>
-                ))}
-              </div>
+                  </button>
+                </span>
+              ))}
+            </div>
               
-              <div className="flex">
-                <input
-                  type="text"
-                  id="tags"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
+            <div className="flex">
+              <input
+                type="text"
+                id="tags"
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                   placeholder="Add a tag..."
                   className="block flex-1 border border-gray-300 dark:border-gray-600 rounded-l-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white py-2 px-3 transition-all duration-200"
-                />
-                <button
-                  type="button"
+              />
+              <button
+                type="button"
                   onClick={addTag}
                   disabled={!newTag.trim()}
                   className="bg-primary-600 text-white px-3 py-2 rounded-r-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Add
-                </button>
-              </div>
+              >
+                Add
+              </button>
+            </div>
               
               {tagSuggestions.length > 0 && (
-                <div className="mt-2">
+              <div className="mt-2">
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Suggested tags:</p>
                   <div className="flex flex-wrap gap-2">
                     {tagSuggestions.map(tag => (
-                      <button
-                        key={tag}
-                        type="button"
+                    <button
+                      key={tag}
+                      type="button"
                         onClick={() => addSuggestedTag(tag)}
                         className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
-                      >
+                    >
                         <Icon name="plus" size="sm" className="mr-1" />
-                        {tag}
-                      </button>
-                    ))}
-                  </div>
+                      {tag}
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
-            
+              </div>
+            )}
+          </div>
+          
             {/* Thumbnail */}
             <div>
               <div className="flex items-center justify-between mb-1">
@@ -434,7 +517,7 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                   />
                   <label htmlFor="auto-image" className="mr-4 text-xs text-gray-600 dark:text-gray-400">
                     Auto-fetch
-                  </label>
+            </label>
                   
                   <input
                     type="radio"
@@ -447,8 +530,8 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                     Custom upload
                   </label>
                 </div>
-              </div>
-              
+          </div>
+          
               <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md hover:border-primary-500 dark:hover:border-primary-500 transition-colors duration-200">
                 {imageUrl ? (
                   <div className="text-center w-full">
@@ -460,8 +543,8 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                     />
                     
                     {useCustomImage && (
-                      <button
-                        type="button"
+            <button
+              type="button"
                         onClick={() => fileInputRef.current?.click()}
                         className="mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
                       >
@@ -522,8 +605,8 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                   variant="tertiary"
                   onClick={handleClose}
                   className="transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  Cancel
+            >
+              Cancel
                 </Button>
                 <Button
                   variant="primary"

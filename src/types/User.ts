@@ -20,6 +20,7 @@ export interface Bookmark {
   updatedAt: number | Timestamp;
   position: number;
   clickCount: number;
+  isFavorite?: boolean;
 }
 
 export interface Category {

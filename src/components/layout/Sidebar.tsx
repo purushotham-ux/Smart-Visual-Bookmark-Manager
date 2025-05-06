@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Icon from '../ui/Icon';
 import { useCategories } from '../../hooks/useCategories';
 import { useTags } from '../../hooks/useTags';
+import { Category } from '../../types/User';
 
 interface SidebarProps {
   userId: string;
@@ -22,7 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   selectedTags,
   onTagSelect,
 }) => {
-  const { categories, isLoading: isLoadingCategories } = useCategories(userId);
+  const { categories, isLoading: isLoadingCategories, addCategory, updateCategory, deleteCategory } = useCategories(userId);
   const { tagNames, isLoading: isLoadingTags } = useTags(userId);
   
   const [expandedSections, setExpandedSections] = useState({
@@ -31,7 +32,11 @@ const Sidebar: React.FC<SidebarProps> = ({
   });
   
   const [isAddingCollection, setIsAddingCollection] = useState(false);
+  const [isEditingCollection, setIsEditingCollection] = useState<boolean>(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [newCollectionName, setNewCollectionName] = useState('');
+  const [categoryIcon, setCategoryIcon] = useState<string>('bookmark');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   const toggleSection = (section: 'collections' | 'tags') => {
     setExpandedSections(prev => ({
@@ -50,19 +55,84 @@ const Sidebar: React.FC<SidebarProps> = ({
   
   const handleAddCollection = () => {
     setIsAddingCollection(true);
+    setIsEditingCollection(false);
+    setEditingCategoryId(null);
+    setNewCollectionName('');
+    setCategoryIcon('bookmark');
   };
   
-  const handleSaveCollection = () => {
-    // Here you would call a function to save the new collection
-    console.log('Save new collection:', newCollectionName);
+  const handleEditCollection = (category: Category) => {
+    setIsEditingCollection(true);
     setIsAddingCollection(false);
-    setNewCollectionName('');
+    setEditingCategoryId(category.id);
+    setNewCollectionName(category.name);
+    setCategoryIcon(category.icon || 'bookmark');
+  };
+  
+  const handleDeleteCollection = async (categoryId: string) => {
+    try {
+      await deleteCategory(categoryId);
+      setShowDeleteConfirm(null);
+      
+      // If the deleted category is currently selected, switch to 'all'
+      if (selectedCategory === categoryId) {
+        onCategoryChange('all');
+      }
+    } catch (error) {
+      console.error('Error deleting collection:', error);
+      // Handle error (show notification, etc.)
+    }
+  };
+  
+  const handleSaveCollection = async () => {
+    if (newCollectionName.trim()) {
+      try {
+        if (isEditingCollection && editingCategoryId) {
+          // Update existing category
+          await updateCategory(editingCategoryId, {
+            name: newCollectionName.trim(),
+            icon: categoryIcon,
+          });
+        } else {
+          // Add new category
+          const newCategoryId = await addCategory({
+            name: newCollectionName.trim(),
+            icon: categoryIcon,
+          });
+          
+          // Select the new category
+          if (newCategoryId) {
+            onCategoryChange(newCategoryId);
+          }
+        }
+        
+        // Reset the form
+        setNewCollectionName('');
+        setCategoryIcon('bookmark');
+        setIsEditingCollection(false);
+        setEditingCategoryId(null);
+      } catch (error) {
+        console.error('Error saving collection:', error);
+        // Handle error (show notification, etc.)
+      }
+    }
+    setIsAddingCollection(false);
   };
   
   const handleCancelAddCollection = () => {
     setIsAddingCollection(false);
+    setIsEditingCollection(false);
+    setEditingCategoryId(null);
     setNewCollectionName('');
   };
+
+  const iconOptions: Array<{ icon: string, label: string }> = [
+    { icon: 'bookmark', label: 'Bookmark' },
+    { icon: 'code', label: 'Code' },
+    { icon: 'video', label: 'Video' },
+    { icon: 'star', label: 'Star' },
+    { icon: 'tag', label: 'Tag' },
+  ];
 
   return (
     <aside 
@@ -75,18 +145,18 @@ const Sidebar: React.FC<SidebarProps> = ({
         flex flex-col
       `}
     >
-      {/* Main Navigation */}
-      <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500">
+      {/* Main Navigation with Scrolling */}
+      <div className="h-full overflow-y-auto custom-scrollbar">
         <nav className={`px-4 py-5 ${isCollapsed ? 'px-2' : ''}`}>
           {/* Primary Navigation */}
           <div className="space-y-1.5">
             <NavItem 
               icon="home" 
               label="All Bookmarks" 
-              isActive={!selectedCategory && selectedTags.length === 0}
+              isActive={selectedCategory === 'all' && selectedTags.length === 0}
               isCollapsed={isCollapsed}
               onClick={() => {
-                onCategoryChange('');
+                onCategoryChange('all');
                 onTagSelect([]);
               }}
             />
@@ -94,17 +164,23 @@ const Sidebar: React.FC<SidebarProps> = ({
             <NavItem 
               icon="clock" 
               label="Recently Added" 
-              isActive={false}
+              isActive={selectedCategory === 'recent'}
               isCollapsed={isCollapsed}
-              onClick={() => {}}
+              onClick={() => {
+                onCategoryChange('recent');
+                onTagSelect([]);
+              }}
             />
             
             <NavItem 
               icon="star" 
               label="Favorites" 
-              isActive={false}
+              isActive={selectedCategory === 'favorites'}
               isCollapsed={isCollapsed}
-              onClick={() => {}}
+              onClick={() => {
+                onCategoryChange('favorites');
+                onTagSelect([]);
+              }}
             />
           </div>
           
@@ -118,7 +194,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 onToggle={() => toggleSection('collections')}
               />
               
-              {!isCollapsed && !isAddingCollection && (
+              {!isCollapsed && !isAddingCollection && !isEditingCollection && (
                 <button
                   onClick={handleAddCollection}
                   className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -130,36 +206,55 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
             
             {expandedSections.collections && !isCollapsed && (
-              <div className="mt-2 space-y-1.5">
-                {isAddingCollection && (
-                  <div className="px-3 py-2 rounded-md bg-gray-50 dark:bg-gray-700 flex items-center space-x-2">
+              <div className="mt-2 space-y-1.5 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                {(isAddingCollection || isEditingCollection) && (
+                  <div className="p-3 rounded-md bg-gray-50 dark:bg-gray-700 space-y-3">
                     <input
                       type="text"
                       value={newCollectionName}
                       onChange={(e) => setNewCollectionName(e.target.value)}
                       placeholder="Collection name"
-                      className="flex-1 py-1.5 px-3 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full py-2 px-3 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                       autoFocus
                     />
-                    <button
-                      onClick={handleSaveCollection}
-                      disabled={!newCollectionName.trim()}
-                      className={`p-1.5 rounded-full ${
-                        newCollectionName.trim() 
-                          ? 'text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30' 
-                          : 'text-gray-400 cursor-not-allowed'
-                      }`}
-                      title="Save"
-                    >
-                      <Icon name="bookmark" size="sm" />
-                    </button>
-                    <button
-                      onClick={handleCancelAddCollection}
-                      className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      title="Cancel"
-                    >
-                      <Icon name="close" size="sm" />
-                    </button>
+                    
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {iconOptions.map((option) => (
+                        <button
+                          key={option.icon}
+                          type="button"
+                          onClick={() => setCategoryIcon(option.icon)}
+                          className={`p-2 rounded-md flex items-center justify-center ${
+                            categoryIcon === option.icon
+                              ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400 ring-1 ring-primary-400'
+                              : 'bg-white dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                          }`}
+                          title={option.label}
+                        >
+                          <Icon name={option.icon as any} size="sm" />
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <div className="flex justify-end space-x-2 mt-2">
+                      <button
+                        onClick={handleCancelAddCollection}
+                        className="px-3 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSaveCollection}
+                        disabled={!newCollectionName.trim()}
+                        className={`px-3 py-1.5 rounded text-sm ${
+                          newCollectionName.trim() 
+                            ? 'bg-primary-500 hover:bg-primary-600 text-white' 
+                            : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        {isEditingCollection ? 'Update' : 'Add Collection'}
+                      </button>
+                    </div>
                   </div>
                 )}
               
@@ -186,15 +281,63 @@ const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                 ) : (
                   categories.map(category => (
-                    <NavItem 
-                      key={category.id}
-                      icon={category.icon as any || undefined}
-                      label={category.name}
-                      isActive={selectedCategory === category.id}
-                      isCollapsed={isCollapsed}
-                      indented
-                      onClick={() => onCategoryChange(category.id)}
-                    />
+                    <div key={category.id} className="relative group">
+                      {/* Delete Confirmation Dialog */}
+                      {showDeleteConfirm === category.id && (
+                        <div className="absolute right-0 top-0 mt-8 z-10 bg-white dark:bg-gray-700 rounded-md shadow-lg p-3 w-52 text-sm border border-gray-200 dark:border-gray-600">
+                          <p className="text-gray-700 dark:text-gray-200 mb-2">Delete this collection?</p>
+                          <div className="flex justify-end space-x-2">
+                            <button 
+                              onClick={() => setShowDeleteConfirm(null)}
+                              className="px-2 py-1 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                            >
+                              Cancel
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteCollection(category.id)}
+                              className="px-2 py-1 rounded bg-red-500 text-white hover:bg-red-600"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center">
+                        <NavItem 
+                          icon={category.icon as any || undefined}
+                          label={category.name}
+                          isActive={selectedCategory === category.id}
+                          isCollapsed={isCollapsed}
+                          indented
+                          onClick={() => onCategoryChange(category.id)}
+                          className="flex-grow"
+                        />
+                        
+                        <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditCollection(category);
+                            }}
+                            className="ml-1 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                            title="Edit collection"
+                          >
+                            <Icon name="edit" size="sm" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowDeleteConfirm(category.id);
+                            }}
+                            className="ml-1 p-1 text-gray-400 hover:text-red-500 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                            title="Delete collection"
+                          >
+                            <Icon name="close" size="sm" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   ))
                 )}
               </div>
@@ -223,30 +366,31 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
             
             {expandedSections.tags && !isCollapsed && (
-              <div className="mt-2 flex flex-wrap gap-2 px-2">
+              <div className="mt-2 space-y-1 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
                 {isLoadingTags ? (
-                  <div className="w-full py-4">
+                  <div className="px-2 py-3">
                     <div className="animate-pulse flex flex-wrap gap-2">
                       <div className="h-7 w-16 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-                      <div className="h-7 w-12 rounded-full bg-gray-300 dark:bg-gray-600"></div>
                       <div className="h-7 w-20 rounded-full bg-gray-300 dark:bg-gray-600"></div>
                       <div className="h-7 w-14 rounded-full bg-gray-300 dark:bg-gray-600"></div>
                       <div className="h-7 w-18 rounded-full bg-gray-300 dark:bg-gray-600"></div>
                     </div>
                   </div>
-                ) : tagNames.length === 0 ? (
-                  <div className="w-full px-3 py-3 text-sm text-gray-500 dark:text-gray-400 text-center rounded-md bg-gray-50 dark:bg-gray-700/50">
+                ) : Object.keys(tagNames).length === 0 ? (
+                  <div className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 text-center rounded-md bg-gray-50 dark:bg-gray-700/50">
                     No tags yet
                   </div>
                 ) : (
-                  tagNames.map(tag => (
-                    <TagPill
-                      key={tag}
-                      label={tag}
-                      isSelected={selectedTags.includes(tag)}
-                      onClick={() => handleTagClick(tag)}
-                    />
-                  ))
+                  <div className="flex flex-wrap gap-2 px-2">
+                    {Object.entries(tagNames).map(([tagId, tagName]) => (
+                      <TagPill
+                        key={tagId}
+                        label={tagName}
+                        isSelected={selectedTags.includes(tagId)}
+                        onClick={() => handleTagClick(tagId)}
+                      />
+                    ))}
+                  </div>
                 )}
               </div>
             )}
@@ -256,18 +400,10 @@ const Sidebar: React.FC<SidebarProps> = ({
       
       {/* Bottom Utilities */}
       <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800 shadow-inner">
-        <NavItem 
-          icon="settings" 
-          label="Settings" 
-          isActive={false}
-          isCollapsed={isCollapsed}
-          onClick={() => {}}
-        />
-        
         <button
           onClick={onToggleCollapse}
           className={`
-            mt-4 w-full flex items-center justify-center p-2.5 rounded-md 
+            w-full flex items-center justify-center p-2.5 rounded-md 
             text-gray-600 dark:text-gray-300 
             bg-gray-100 dark:bg-gray-700
             hover:bg-gray-200 dark:hover:bg-gray-600 
@@ -289,6 +425,7 @@ interface NavItemProps {
   isCollapsed: boolean;
   indented?: boolean;
   onClick: () => void;
+  className?: string;
 }
 
 const NavItem: React.FC<NavItemProps> = ({
@@ -298,25 +435,27 @@ const NavItem: React.FC<NavItemProps> = ({
   isCollapsed,
   indented = false,
   onClick,
+  className = '',
 }) => {
   return (
-    <button
-      onClick={onClick}
+    <div
       className={`
-        w-full flex items-center px-3 py-2.5 text-sm rounded-md
-        ${isActive ? 
-          'bg-primary-50 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 font-medium border-l-2 border-primary-500 dark:border-primary-400' : 
-          'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border-l-2 border-transparent'
-        }
-        ${indented && !isCollapsed ? 'pl-5' : ''}
-        transition-all duration-200
+        flex items-center py-2 px-3 rounded-md cursor-pointer 
+        ${isActive ? 'bg-primary-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}
+        ${indented ? 'ml-2' : ''}
+        ${className}
       `}
+      onClick={onClick}
     >
-      {icon && <Icon name={icon as any} size="md" className={`flex-shrink-0 ${isActive ? 'text-primary-500 dark:text-primary-400' : ''}`} />}
-      {!isCollapsed && (
-        <span className={`${icon ? 'ml-3' : ''} truncate flex-1 text-left`}>{label}</span>
+      {icon && (
+        <div className="flex-shrink-0 w-5 h-5 mr-3">
+          <Icon name={icon as any} size="sm" />
+        </div>
       )}
-    </button>
+      {!isCollapsed && (
+        <span className="flex-grow truncate">{label}</span>
+      )}
+    </div>
   );
 };
 
@@ -334,19 +473,23 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
   onToggle,
 }) => {
   return (
-    <div className="flex items-center">
+    <div className="flex items-center" onClick={onToggle}>
       {!isCollapsed && (
-        <h3 className="px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          {title}
-        </h3>
-      )}
-      {!isCollapsed && (
-        <button
-          onClick={onToggle}
-          className="ml-1.5 p-1 rounded-md text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-        >
-          <Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} size="sm" />
-        </button>
+        <>
+          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            {title}
+          </h3>
+          <button
+            className="ml-1.5 text-gray-400 focus:outline-none"
+            title={isExpanded ? `Collapse ${title}` : `Expand ${title}`}
+          >
+            <Icon
+              name={isExpanded ? 'chevron-down' : 'chevron-right'}
+              size="sm"
+              className="transform transition-transform"
+            />
+          </button>
+        </>
       )}
     </div>
   );
@@ -365,19 +508,51 @@ const TagPill: React.FC<TagPillProps> = ({
 }) => {
   return (
     <button
-      onClick={onClick}
       className={`
-        inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium
-        ${isSelected ? 
-          'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300 ring-1 ring-primary-300 dark:ring-primary-700' : 
-          'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-        }
-        transition-all duration-200 hover:scale-105
+        px-3 py-1 rounded-full text-xs font-medium 
+        ${isSelected 
+          ? 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200 ring-1 ring-primary-400' 
+          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}
+        transition-colors
       `}
+      onClick={onClick}
     >
-      <span>{label}</span>
+      {label}
     </button>
   );
 };
+
+// Add custom scrollbar styles
+const scrollbarStyles = `
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.3);
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.5);
+  }
+  
+  /* For Firefox */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+  }
+`;
+
+// Inject the scrollbar styles
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = scrollbarStyles;
+  document.head.appendChild(styleElement);
+}
 
 export default Sidebar; 

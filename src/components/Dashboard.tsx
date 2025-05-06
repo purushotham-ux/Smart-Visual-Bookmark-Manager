@@ -6,6 +6,7 @@ import Sidebar from './layout/Sidebar';
 import TopBar from './layout/TopBar';
 import { useAuth } from '../contexts/AuthContext';
 import { useBookmarks } from '../hooks/useBookmarks';
+import { useCategories } from '../hooks/useCategories';
 import { useTheme } from '../hooks/useTheme.js';
 import Icon from './ui/Icon';
 import Button from './ui/Button';
@@ -28,6 +29,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const { isDarkMode } = useTheme();
   const [isLoadingSamples, setIsLoadingSamples] = useState<boolean>(false);
   const [isPageLoading, setIsPageLoading] = useState<boolean>(true);
+  const [editBookmark, setEditBookmark] = useState<Bookmark | null>(null);
   
   // Custom hooks for data management
   const { 
@@ -41,8 +43,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     setSelectedTags,
     addBookmark,
     deleteBookmark,
+    updateBookmark,
     handleBookmarkClick
   } = useBookmarks(user.uid);
+  
+  // Get categories for display
+  const { categories } = useCategories(user.uid);
   
   // Simulate initial page loading
   useEffect(() => {
@@ -86,6 +92,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     }
   };
 
+  // Handle edit for bookmark
+  const handleEditBookmark = (bookmark: Bookmark) => {
+    setEditBookmark(bookmark);
+    setIsAddModalOpen(true);
+  };
+
   // Function to add sample data
   const handleAddSampleBookmarks = async () => {
     setIsLoadingSamples(true);
@@ -122,7 +134,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
   // Generate skeleton loaders while content is loading
   const renderSkeletons = () => {
-    return (
+  return (
       <div className={getGridLayout()}>
         {Array(8).fill(0).map((_, index) => (
           <div key={`skeleton-${index}`} className="rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 animate-pulse shadow-md">
@@ -162,7 +174,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
         <Button
           variant="primary"
-          onClick={() => setIsAddModalOpen(true)}
+                onClick={() => setIsAddModalOpen(true)}
           leftIcon={<Icon name="plus" />}
           fullWidth
           size="lg"
@@ -200,8 +212,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             <span>Use the search bar to quickly find what you need</span>
           </li>
         </ul>
-      </div>
-    </div>
+                </div>
+              </div>
   );
 
   // Initial loading screen
@@ -262,11 +274,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <div className="flex flex-col md:flex-row md:justify-between md:items-center">
                 <div>
                   <h1 className="text-h1 font-semibold text-gray-900 dark:text-white">
-                    {selectedCategory !== 'all'
-                      ? `Collection: ${selectedCategory}` 
-                      : selectedTags.length > 0 
-                        ? `Tags: ${selectedTags.join(', ')}` 
-                        : 'All Bookmarks'}
+                    {selectedCategory === 'favorites' 
+                      ? 'Favorite Bookmarks'
+                      : selectedCategory !== 'all' && selectedCategory
+                        ? `Collection: ${categories.find(cat => cat.id === selectedCategory)?.name || 'Unknown Collection'}` 
+                        : selectedTags.length > 0 
+                          ? `Tags: ${selectedTags.join(', ')}` 
+                          : 'All Bookmarks'}
                   </h1>
                   <p className="text-gray-600 dark:text-gray-400 mt-1">
                     {filteredBookmarks.length} {filteredBookmarks.length === 1 ? 'bookmark' : 'bookmarks'} {searchQuery ? `matching "${searchQuery}"` : ''}
@@ -287,26 +301,26 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Icon name="search" className="text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search bookmarks..."
                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors duration-200"
-                  />
-                  {searchQuery && (
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                      <button 
+                />
+                {searchQuery && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <button 
                         className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-                        onClick={() => setSearchQuery('')}
-                      >
+                      onClick={() => setSearchQuery('')}
+                    >
                         <Icon name="close" size="sm" />
-                      </button>
-                    </div>
-                  )}
-                </div>
+                    </button>
+                  </div>
+                )}
               </div>
+            </div>
             </div>
             
             {/* Bookmarks Grid/List */}
@@ -323,6 +337,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     onDelete={deleteBookmark}
                     onClick={handleBookmarkClick}
                     aspectRatio={activeView === 'list' ? '4:3' : '16:9'}
+                    onEdit={handleEditBookmark}
                   />
                 ))}
               </div>
@@ -346,9 +361,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       {/* Add Bookmark Modal */}
       {isAddModalOpen && (
         <AddBookmarkModal
-          onClose={() => setIsAddModalOpen(false)}
+          onClose={() => {
+            setIsAddModalOpen(false);
+            setEditBookmark(null);
+          }}
           onAdd={handleAddBookmark}
           userId={user.uid}
+          editBookmark={editBookmark || undefined}
         />
       )}
     </div>

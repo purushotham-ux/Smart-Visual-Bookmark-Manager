@@ -71,8 +71,13 @@ export const useBookmarks = (userId: string) => {
         filtered = await performSearch(searchQuery);
       }
       
-      // Filter by category
-      if (selectedCategory !== 'all') {
+      // Filter by category, favorites, or recent
+      if (selectedCategory === 'favorites') {
+        filtered = filtered.filter(bookmark => bookmark.isFavorite === true);
+      } else if (selectedCategory === 'recent') {
+        // Sort by most recently added first (already done below, but keep only the most recent ones)
+        // No additional filtering needed as we'll sort by date below
+      } else if (selectedCategory !== 'all' && selectedCategory) {
         filtered = filtered.filter(bookmark => bookmark.category === selectedCategory);
       }
       
@@ -95,6 +100,11 @@ export const useBookmarks = (userId: string) => {
         
         return bTime - aTime;
       });
+      
+      // If showing recent bookmarks, limit to the 20 most recent
+      if (selectedCategory === 'recent') {
+        filtered = filtered.slice(0, 20);
+      }
       
       setFilteredBookmarks(filtered);
       setIsLoading(false);

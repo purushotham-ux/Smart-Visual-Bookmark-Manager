@@ -1,24 +1,21 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
-  ],
+  content: ['./src/**/*.{js,jsx,ts,tsx}'],
   darkMode: 'class',
   theme: {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#3465FF',
-          50: '#EBF0FF',
-          100: '#D6E0FF',
-          200: '#ADC2FF',
-          300: '#84A3FF',
-          400: '#5B85FF',
-          500: '#3465FF',
-          600: '#0039F5',
-          700: '#002DB2',
-          800: '#00216F',
-          900: '#00152C',
+          50: '#eef2ff',
+          100: '#e0e7ff',
+          200: '#c7d2fe',
+          300: '#a5b4fc',
+          400: '#818cf8',
+          500: '#6366f1',
+          600: '#4f46e5',
+          700: '#4338ca',
+          800: '#3730a3',
+          900: '#312e81',
         },
         secondary: {
           DEFAULT: '#36D6BD',
@@ -60,17 +57,12 @@ module.exports = {
           900: '#6A4500',
         },
         error: {
-          DEFAULT: '#F85A5A',
-          50: '#FEE9E9',
-          100: '#FDC7C7',
-          200: '#FBA5A5',
-          300: '#FA8383',
-          400: '#F96161',
-          500: '#F85A5A',
-          600: '#F62828',
-          700: '#DF0A0A',
-          800: '#AD0808',
-          900: '#7B0606',
+          300: '#fca5a5',
+          400: '#f87171',
+          500: '#ef4444',
+          700: '#b91c1c',
+          800: '#991b1b',
+          900: '#7f1d1d',
         },
         gray: {
           50: '#FFFFFF',
@@ -86,7 +78,7 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'Roboto', 'sans-serif'],
+        sans: ['Inter var', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
         mono: ['Roboto Mono', 'monospace'],
       },
       spacing: {
@@ -122,6 +114,26 @@ module.exports = {
       },
       transitionTimingFunction: {
         'DEFAULT': 'cubic-bezier(0.4, 0, 0.2, 1)',
+      },
+      animation: {
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'blob': 'blob 7s infinite',
+      },
+      keyframes: {
+        blob: {
+          '0%': {
+            transform: 'translate(0px, 0px) scale(1)',
+          },
+          '33%': {
+            transform: 'translate(30px, -50px) scale(1.1)',
+          },
+          '66%': {
+            transform: 'translate(-20px, 20px) scale(0.9)',
+          },
+          '100%': {
+            transform: 'translate(0px, 0px) scale(1)',
+          },
+        },
       },
     },
   },

@@ -33,14 +33,15 @@ interface IconProps {
   name: IconName;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
+  id?: string;
 }
 
-const Icon: React.FC<IconProps> = ({ name, size = 'md', className = '' }) => {
+const Icon: React.FC<IconProps> = ({ name, size = 'md', className = '', id }) => {
   const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-5 h-5',
-    lg: 'w-6 h-6',
-    xl: 'w-8 h-8',
+    sm: 'w-6 h-6',
+    md: 'w-7 h-7',
+    lg: 'w-8 h-8',
+    xl: 'w-12 h-12',
   };
 
   const icons: Record<IconName, JSX.Element> = {
@@ -183,7 +184,7 @@ const Icon: React.FC<IconProps> = ({ name, size = 'md', className = '' }) => {
   };
 
   return (
-    <div className={`${sizeClasses[size]} ${className}`}>
+    <div id={id} className={`${sizeClasses[size]} ${className}`}>
       {icons[name]}
     </div>
   );
