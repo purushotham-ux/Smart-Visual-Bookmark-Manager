@@ -39,11 +39,19 @@ export const subscribeToBookmarks = (
   userId: string,
   callback: (bookmarks: Bookmark[]) => void
 ): Unsubscribe => {
+  if (!userId) {
+    console.error("Error subscribing to bookmarks: userId is missing or empty");
+    callback([]);
+    return () => {};
+  }
+
+  console.log(`Subscribing to bookmarks for user: ${userId}`);
   const bookmarksCollection = collection(db, getUserBookmarksPath(userId));
   const q = query(bookmarksCollection, orderBy('createdAt', 'desc'));
   
   return onSnapshot(q, {
     next: (snapshot) => {
+      console.log(`Received ${snapshot.docs.length} bookmarks for user: ${userId}`);
       const bookmarks = snapshot.docs.map(doc => {
         const data = doc.data();
         // Ensure the bookmark has an ID
@@ -62,6 +70,7 @@ export const subscribeToBookmarks = (
     },
     error: (error) => {
       console.error("Error listening to bookmarks:", error);
+      callback([]);
     }
   });
 };

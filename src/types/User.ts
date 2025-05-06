@@ -15,6 +15,7 @@ export interface Bookmark {
   tags: string[];
   notes?: string | null;
   favicon?: string;
+  imageUrl?: string;
   createdAt: number | Timestamp;
   updatedAt: number | Timestamp;
   position: number;

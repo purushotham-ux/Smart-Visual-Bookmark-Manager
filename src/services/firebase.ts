@@ -7,9 +7,16 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   Auth, 
-  User
+  User,
+  setPersistence,
+  browserLocalPersistence
 } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  Firestore, 
+  enableIndexedDbPersistence,
+  CACHE_SIZE_UNLIMITED
+} from 'firebase/firestore';
 import { getAnalytics, Analytics } from 'firebase/analytics';
 
 // Your Firebase configuration
@@ -32,6 +39,24 @@ export const db: Firestore = getFirestore(app);
 export const analytics: Analytics = getAnalytics(app);
 export const googleProvider: GoogleAuthProvider = new GoogleAuthProvider();
 export const githubProvider: GithubAuthProvider = new GithubAuthProvider();
+
+// Enable offline persistence for Firestore
+enableIndexedDbPersistence(db)
+  .catch((err) => {
+    if (err.code === 'failed-precondition') {
+      // Multiple tabs open, persistence can only be enabled in one tab at a time
+      console.warn('Firebase persistence failed to initialize: Multiple tabs open');
+    } else if (err.code === 'unimplemented') {
+      // The current browser does not support all of the features required for persistence
+      console.warn('Firebase persistence failed to initialize: Browser not supported');
+    }
+  });
+
+// Enable local persistence for Auth
+setPersistence(auth, browserLocalPersistence)
+  .catch((error) => {
+    console.error('Error setting auth persistence:', error);
+  });
 
 // Configure Google Auth Provider
 googleProvider.setCustomParameters({

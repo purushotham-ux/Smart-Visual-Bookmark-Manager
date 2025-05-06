@@ -38,8 +38,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    console.log('Setting up auth state listener');
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
+        console.log(`User authenticated: ${user.uid}`);
         // Convert Firebase user to our User type
         const appUser: User = {
           uid: user.uid,
@@ -48,8 +50,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
           photoURL: user.photoURL || undefined
         };
         setCurrentUser(appUser);
+        
+        // Store basic user info in localStorage for recovery if needed
+        try {
+          localStorage.setItem('auth_user', JSON.stringify({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName || user.email || 'User'
+          }));
+        } catch (error) {
+          console.error('Failed to store user info in localStorage:', error);
+        }
       } else {
+        console.log('No user authenticated');
         setCurrentUser(null);
+        try {
+          localStorage.removeItem('auth_user');
+        } catch (error) {
+          console.error('Failed to remove user info from localStorage:', error);
+        }
       }
       setLoading(false);
     });

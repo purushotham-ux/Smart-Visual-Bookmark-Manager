@@ -1,370 +1,585 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bookmark } from '../types/User';
-import { isValidUrl, formatUrl, getFaviconUrl } from '../utils/url';
+import { useCategories } from '../hooks/useCategories';
+import { useTags } from '../hooks/useTags';
+import Button from './ui/Button';
+import Icon from './ui/Icon';
 
 interface AddBookmarkModalProps {
-  categories: { id: string; name: string }[];
-  tags: string[];
-  onAdd: (bookmark: Omit<Bookmark, 'id' | 'createdAt' | 'updatedAt' | 'position' | 'clickCount'>) => Promise<void>;
   onClose: () => void;
+  onAdd: (bookmark: Omit<Bookmark, 'id' | 'createdAt' | 'updatedAt' | 'position' | 'clickCount'>) => void;
+  userId: string;
+  editBookmark?: Bookmark; // Optional prop for editing existing bookmark
 }
 
 const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
-  categories,
-  tags,
+  onClose,
   onAdd,
-  onClose
+  userId,
+  editBookmark
 }) => {
-  const [title, setTitle] = useState('');
-  const [url, setUrl] = useState('');
-  const [category, setCategory] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [newTag, setNewTag] = useState('');
-  const [notes, setNotes] = useState('');
+  // Get categories and tags from hooks
+  const { categories } = useCategories(userId);
+  const { tagNames } = useTags(userId);
+  
+  // Form data state
+  const [url, setUrl] = useState<string>(editBookmark?.url || '');
+  const [title, setTitle] = useState<string>(editBookmark?.title || '');
+  const [description, setDescription] = useState<string>(editBookmark?.notes || '');
+  const [category, setCategory] = useState<string>(editBookmark?.category || '');
+  const [tags, setTags] = useState<string[]>(editBookmark?.tags || []);
+  const [newTag, setNewTag] = useState<string>('');
+  const [imageUrl, setImageUrl] = useState<string>(editBookmark?.imageUrl || '');
+  const [favicon, setFavicon] = useState<string>(editBookmark?.favicon || '');
+  const [useCustomImage, setUseCustomImage] = useState<boolean>(false);
+  
+  // UI state
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isRetrieving, setIsRetrieving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFetchingTitle, setIsFetchingTitle] = useState(false);
-  const [isUrlValid, setIsUrlValid] = useState(true);
+  const [activeStep, setActiveStep] = useState<number>(editBookmark ? 2 : 1);
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const [isClosing, setIsClosing] = useState<boolean>(false);
   
   const modalRef = useRef<HTMLDivElement>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
-  const titleInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Set default category if available
+  // When the modal opens, focus on the URL input
   useEffect(() => {
-    if (categories.length > 0 && !category) {
-      setCategory(categories[0].id);
+    if (activeStep === 1 && urlInputRef.current) {
+      urlInputRef.current.focus();
     }
-  }, [categories, category]);
-  
-  // Auto-focus the URL input when the modal opens
-  useEffect(() => {
-    urlInputRef.current?.focus();
   }, []);
 
-  // Auto-fetch title when a valid URL is entered and the title field is empty
+  // When URL changes and not in edit mode, try to retrieve metadata
   useEffect(() => {
-    const fetchTitle = async () => {
-      if (!url || !isValidUrl(url) || title || isFetchingTitle) return;
-      
-      setIsFetchingTitle(true);
-      
-      try {
-        // Extract domain from URL
-        const domain = new URL(formatUrl(url)).hostname.replace('www.', '');
-        // Use the domain name as the title
-        setTitle(domain.charAt(0).toUpperCase() + domain.slice(1));
-      } catch (error) {
-        console.error('Error setting title:', error);
-      } finally {
-        setIsFetchingTitle(false);
+    if (!editBookmark && url && url.trim() !== '' && isValidUrl(url)) {
+      fetchMetadata();
+    }
+  }, [url]);
+
+  // Handle closing modal with escape key and click outside
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        handleClose();
       }
     };
     
-    fetchTitle();
-  }, [url, title, isFetchingTitle]);
-  
-  // Close modal when clicking outside or pressing Escape
-  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        onClose();
+        handleClose();
       }
     };
-    
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-    
+
+    window.addEventListener('keydown', handleEscKey);
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
     
     return () => {
+      window.removeEventListener('keydown', handleEscKey);
       document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
-  
-  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setUrl(value);
-    setIsUrlValid(value === '' || isValidUrl(value));
+
+  // Controlled closing with animation
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 200);
   };
   
+  // Validate URL format
+  const isValidUrl = (urlString: string): boolean => {
+    try {
+      const url = new URL(urlString);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (error) {
+      return false;
+    }
+  };
+
+  // Fetch metadata from URL
+  const fetchMetadata = async () => {
+    if (!isValidUrl(url)) {
+      setError('Please enter a valid URL starting with http:// or https://');
+      return;
+    }
+
+    setIsRetrieving(true);
+    setError(null);
+
+    try {
+      // This would normally call a backend service to fetch metadata
+      // For this example, we'll simulate it with a timeout
+      const response = await new Promise<{
+        title: string;
+        description: string;
+        image: string;
+        favicon: string;
+        suggestedTags: string[];
+      }>((resolve) => {
+        setTimeout(() => {
+          // Extract domain for demo purposes
+          const domain = new URL(url).hostname;
+          const siteName = domain.replace('www.', '').split('.')[0];
+          
+          resolve({
+            title: `${siteName.charAt(0).toUpperCase() + siteName.slice(1)} - Sample Page`,
+            description: `This is an automatically generated description for ${domain}`,
+            image: 'https://via.placeholder.com/1200x630',
+            favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
+            suggestedTags: ['web', domain.split('.')[0], 'new']
+          });
+        }, 1000);
+      });
+
+      // Update form with metadata
+      setTitle(response.title);
+      setDescription(response.description);
+      setImageUrl(response.image);
+      setFavicon(response.favicon);
+      setTagSuggestions(response.suggestedTags.filter(tag => !tagNames.includes(tag)));
+      
+      // Set default category if none selected
+      if (!category && categories.length > 0) {
+        setCategory(categories[0].id);
+      }
+      
+      // Move to next step
+      setActiveStep(2);
+    } catch (error) {
+      console.error('Error fetching metadata:', error);
+      setError('Failed to retrieve information from this URL. Please fill in details manually.');
+    } finally {
+      setIsRetrieving(false);
+    }
+  };
+
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form
+    if (!isValidUrl(url)) {
+      setError('Please enter a valid URL starting with http:// or https://');
+      return;
+    }
+    
     if (!title.trim()) {
       setError('Title is required');
-      titleInputRef.current?.focus();
       return;
     }
-    
-    if (!url.trim()) {
-      setError('URL is required');
-      urlInputRef.current?.focus();
-      return;
-    }
-    
-    if (!isUrlValid) {
-      setError('Please enter a valid URL');
-      urlInputRef.current?.focus();
-      return;
-    }
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      const formattedUrl = formatUrl(url.trim());
-      const favicon = getFaviconUrl(formattedUrl);
-      
       const bookmarkData = {
-        title: title.trim(),
-        url: formattedUrl,
+        url,
+        title,
+        notes: description,
         category,
-        tags: selectedTags,
-        notes: notes.trim() || null,
+        tags,
+        imageUrl,
         favicon
       };
-      
-      console.log('AddBookmarkModal: Submitting bookmark with data:', bookmarkData);
-      
+
       await onAdd(bookmarkData);
-      
-      // Success - clear form
-      setTitle('');
-      setUrl('');
-      setNotes('');
-      setSelectedTags([]);
-      
     } catch (error) {
-      console.error('AddBookmarkModal: Error adding bookmark:', error);
-      
-      // Set a more specific error message if available
-      if (error instanceof Error) {
-        setError(`Failed to add bookmark: ${error.message}`);
-      } else {
-        setError('Failed to add bookmark. Please try again.');
-      }
-      
-    } finally {
+      console.error('Error saving bookmark:', error);
+      setError('Failed to save bookmark. Please try again.');
       setIsLoading(false);
     }
   };
-  
-  const handleAddTag = () => {
-    if (newTag.trim() && !selectedTags.includes(newTag.trim())) {
-      setSelectedTags([...selectedTags, newTag.trim()]);
+
+  // Handle tag management
+  const addTag = () => {
+    if (newTag.trim() && !tags.includes(newTag.trim())) {
+      setTags([...tags, newTag.trim()]);
       setNewTag('');
     }
   };
-  
-  const handleTagKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddTag();
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
+  const addSuggestedTag = (tag: string) => {
+    if (!tags.includes(tag)) {
+      setTags([...tags, tag]);
+      setTagSuggestions(tagSuggestions.filter(t => t !== tag));
     }
   };
   
-  const handleRemoveTag = (tag: string) => {
-    setSelectedTags(selectedTags.filter(t => t !== tag));
-  };
-  
-  const handleTagClick = (tag: string) => {
-    if (!selectedTags.includes(tag)) {
-      setSelectedTags([...selectedTags, tag]);
+  // Handle custom image upload
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // In a real app, you would upload the file to storage
+      // For this demo, we'll create a local object URL
+      const localUrl = URL.createObjectURL(file);
+      setImageUrl(localUrl);
     }
   };
   
-  // Filter out already selected tags
-  const filteredTags = tags.filter(tag => !selectedTags.includes(tag));
-  
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-      <div 
-        ref={modalRef}
-        className="bg-gray-800 rounded-lg shadow-xl border border-gray-700 w-full max-w-md max-h-[90vh] overflow-y-auto"
-      >
-        <div className="flex justify-between items-center p-4 border-b border-gray-700">
-          <h2 className="text-xl font-medium text-white">Add Bookmark</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-300 focus:outline-none"
-            aria-label="Close"
-          >
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="p-4">
-          {error && (
-            <div className="mb-4 p-2 bg-red-900 bg-opacity-50 border border-red-700 text-red-200 rounded">
-              {error}
-            </div>
-          )}
-          
-          <div className="mb-4">
-            <label htmlFor="url" className="block text-sm font-medium text-gray-300 mb-1">
-              URL *
-            </label>
-            <div className="relative">
-              <input
-                ref={urlInputRef}
-                type="text"
-                id="url"
-                value={url}
-                onChange={handleUrlChange}
-                className={`w-full px-3 py-2 border ${isUrlValid ? 'border-gray-600' : 'border-red-800'} rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 bg-gray-700 text-white`}
-                placeholder="https://example.com"
-                required
-              />
-              {!isUrlValid && (
-                <p className="mt-1 text-xs text-red-400">
-                  Please enter a valid URL
-                </p>
-              )}
-            </div>
-          </div>
-          
-          <div className="mb-4">
-            <label htmlFor="title" className="block text-sm font-medium text-gray-300 mb-1">
-              Title *
-            </label>
-            <input
-              ref={titleInputRef}
-              type="text"
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 bg-gray-700 text-white"
-              placeholder="My Bookmark"
-              required
-            />
-          </div>
-          
-          <div className="mb-4">
-            <label htmlFor="category" className="block text-sm font-medium text-gray-300 mb-1">
-              Category
-            </label>
-            <select
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 bg-gray-700 text-white"
-            >
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="mb-4">
-            <label htmlFor="tags" className="block text-sm font-medium text-gray-300 mb-1">
-              Tags
-            </label>
-            <div className="flex flex-wrap mb-2 gap-1">
-              {selectedTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-purple-900 text-purple-200"
-                >
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveTag(tag)}
-                    className="ml-1 text-purple-300 hover:text-white"
-                  >
-                    <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="flex">
-              <input
-                type="text"
-                id="tags"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onKeyDown={handleTagKeyDown}
-                className="flex-1 px-3 py-2 border border-gray-600 rounded-l-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 bg-gray-700 text-white"
-                placeholder="Add a tag"
-              />
-              <button
-                type="button"
-                onClick={handleAddTag}
-                className="px-3 py-2 border border-l-0 border-gray-600 rounded-r-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-              >
-                Add
-              </button>
-            </div>
-            {filteredTags.length > 0 && (
-              <div className="mt-2">
-                <p className="text-sm text-gray-400 mb-1">Suggested tags:</p>
-                <div className="flex flex-wrap gap-1">
-                  {filteredTags.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => handleTagClick(tag)}
-                      className="inline-block px-2 py-1 text-xs font-medium rounded bg-gray-700 text-gray-300 hover:bg-purple-900 hover:text-purple-200"
-                    >
-                      {tag}
-                    </button>
-                  ))}
+  // Toggle between auto and custom image
+  const toggleImageSource = () => {
+    setUseCustomImage(!useCustomImage);
+    if (!useCustomImage && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Render based on current step
+  const renderStepContent = () => {
+    switch (activeStep) {
+      case 1:
+        return (
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                URL
+              </label>
+              <div className="relative rounded-md shadow-sm">
+                <input
+                  type="url"
+                  id="url"
+                  ref={urlInputRef}
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  className="block w-full pl-4 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white transition-all duration-200"
+                  autoFocus
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                  <Icon name="search" className="h-5 w-5 text-gray-400" />
                 </div>
               </div>
+              <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                Enter the URL of the website you want to bookmark
+              </p>
+            </div>
+            
+            <div className="flex justify-between pt-4">
+              <Button
+                variant="tertiary"
+                onClick={handleClose}
+                className="transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={fetchMetadata}
+                isLoading={isRetrieving}
+                disabled={!url.trim() || isRetrieving}
+                className="transition-all duration-200 transform hover:scale-105"
+              >
+                {editBookmark ? 'Update Details' : 'Fetch Details'}
+              </Button>
+            </div>
+          </div>
+        );
+      
+      case 2:
+        return (
+          <div className="space-y-4">
+            {/* URL */}
+            <div>
+              <label htmlFor="url-preview" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                URL
+              </label>
+              <div className="flex items-center rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 bg-gray-50 dark:bg-gray-700">
+                {favicon && (
+                  <img 
+                    src={favicon} 
+                    alt="" 
+                    className="w-5 h-5 mr-2 flex-shrink-0 rounded-sm" 
+                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                  />
+                )}
+                <input
+                  type="url"
+                  id="url-preview"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="block w-full bg-transparent border-none focus:ring-0 focus:outline-none dark:text-white"
+                />
+              </div>
+            </div>
+            
+            {/* Title */}
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Title
+              </label>
+              <input
+                type="text"
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="block w-full border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white py-2 px-3 transition-all duration-200"
+              />
+            </div>
+            
+            {/* Description */}
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Description (optional)
+              </label>
+              <textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="block w-full border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white resize-none py-2 px-3 transition-all duration-200"
+              />
+            </div>
+            
+            {/* Category */}
+            <div>
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Category
+              </label>
+              <select
+                id="category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="block w-full border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white py-2 pl-3 pr-10 transition-all duration-200"
+              >
+                <option value="">Select a category</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Tags */}
+            <div>
+              <label htmlFor="tags" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Tags
+              </label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {tags.map(tag => (
+                  <span 
+                    key={tag}
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full text-primary-400 hover:text-primary-600 dark:text-primary-300 dark:hover:text-primary-100 focus:outline-none"
+                      onClick={() => removeTag(tag)}
+                    >
+                      <Icon name="close" size="sm" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              
+              <div className="flex">
+                <input
+                  type="text"
+                  id="tags"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                  placeholder="Add a tag..."
+                  className="block flex-1 border border-gray-300 dark:border-gray-600 rounded-l-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white py-2 px-3 transition-all duration-200"
+                />
+                <button
+                  type="button"
+                  onClick={addTag}
+                  disabled={!newTag.trim()}
+                  className="bg-primary-600 text-white px-3 py-2 rounded-r-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Add
+                </button>
+              </div>
+              
+              {tagSuggestions.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Suggested tags:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {tagSuggestions.map(tag => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => addSuggestedTag(tag)}
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
+                      >
+                        <Icon name="plus" size="sm" className="mr-1" />
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Thumbnail */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Thumbnail
+                </label>
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="auto-image"
+                    checked={!useCustomImage}
+                    onChange={() => setUseCustomImage(false)}
+                    className="mr-1"
+                  />
+                  <label htmlFor="auto-image" className="mr-4 text-xs text-gray-600 dark:text-gray-400">
+                    Auto-fetch
+                  </label>
+                  
+                  <input
+                    type="radio"
+                    id="custom-image"
+                    checked={useCustomImage}
+                    onChange={() => setUseCustomImage(true)}
+                    className="mr-1"
+                  />
+                  <label htmlFor="custom-image" className="text-xs text-gray-600 dark:text-gray-400">
+                    Custom upload
+                  </label>
+                </div>
+              </div>
+              
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md hover:border-primary-500 dark:hover:border-primary-500 transition-colors duration-200">
+                {imageUrl ? (
+                  <div className="text-center w-full">
+                    <img 
+                      src={imageUrl} 
+                      alt={title} 
+                      className="mx-auto h-32 object-cover rounded-md mb-2"
+                      onError={() => setImageUrl('')}
+                    />
+                    
+                    {useCustomImage && (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
+                      >
+                        Change image
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-1 text-center">
+                    <div className="flex justify-center">
+                      <Icon name="bookmark" size="lg" className="text-gray-400" />
+                    </div>
+                    <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                      <label
+                        htmlFor="file-upload"
+                        className={`relative mx-auto cursor-pointer rounded-md bg-white dark:bg-gray-800 font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300 focus-within:outline-none ${
+                          !useCustomImage ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                      >
+                        <span>Upload a file</span>
+                        <input 
+                          id="file-upload" 
+                          name="file-upload" 
+                          type="file"
+                          ref={fileInputRef}
+                          accept="image/*"
+                          className="sr-only"
+                          onChange={handleImageUpload}
+                          disabled={!useCustomImage}
+                        />
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      PNG, JPG, GIF up to 5MB
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {error && (
+              <div className="bg-error-50 dark:bg-error-900/30 text-error-700 dark:text-error-300 p-3 rounded-md text-sm flex items-start">
+                <Icon name="close" className="flex-shrink-0 h-5 w-5 mr-2 text-error-500" />
+                <span>{error}</span>
+              </div>
             )}
+            
+            <div className="flex justify-between pt-4">
+              <Button
+                variant="secondary" 
+                onClick={() => setActiveStep(1)}
+                className="transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                Back
+              </Button>
+              <div className="flex space-x-3">
+                <Button
+                  variant="tertiary"
+                  onClick={handleClose}
+                  className="transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleSubmit}
+                  isLoading={isLoading}
+                  disabled={!url.trim() || !title.trim() || isLoading}
+                  className="transition-all duration-200 transform hover:scale-105"
+                >
+                  {editBookmark ? 'Update Bookmark' : 'Save Bookmark'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
+        {/* Backdrop */}
+        <div 
+          className={`fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity ${
+            isClosing ? 'opacity-0' : 'opacity-100'
+          }`}
+          aria-hidden="true"
+        ></div>
+        
+        {/* Modal panel */}
+        <div 
+          ref={modalRef}
+          className={`relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg ${
+            isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+          }`}
+        >
+          {/* Modal header */}
+          <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700 flex items-center justify-between border-b border-gray-200 dark:border-gray-600">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+              {editBookmark ? 'Edit Bookmark' : 'Add New Bookmark'}
+            </h3>
+            <button
+              onClick={handleClose}
+              className="rounded-full h-8 w-8 flex items-center justify-center text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <Icon name="close" />
+            </button>
           </div>
           
-          <div className="mb-6">
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-300 mb-1">
-              Notes
-            </label>
-            <textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 bg-gray-700 text-white"
-              placeholder="Add some notes (optional)"
-            />
+          {/* Modal content */}
+          <div className="px-4 pt-5 pb-5 sm:p-6">
+            {renderStepContent()}
           </div>
-          
-          <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Adding...
-                </span>
-              ) : 'Add Bookmark'}
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );

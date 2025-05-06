@@ -20,12 +20,26 @@ export const useBookmarks = (userId: string) => {
 
   // Subscribe to bookmarks
   useEffect(() => {
+    if (!userId) {
+      console.warn('useBookmarks: No userId provided, skipping subscription');
+      return () => {};
+    }
+
+    console.log(`useBookmarks: Setting up subscription for user ${userId}`);
+    setIsLoading(true);
+    setBookmarks([]);
+    setFilteredBookmarks([]);
+
     const unsubscribe = subscribeToBookmarks(userId, (newBookmarks) => {
+      console.log(`useBookmarks: Received ${newBookmarks.length} bookmarks for user ${userId}`);
       setBookmarks(newBookmarks);
       setIsLoading(false);
     });
 
-    return unsubscribe;
+    return () => {
+      console.log(`useBookmarks: Cleaning up subscription for user ${userId}`);
+      unsubscribe();
+    };
   }, [userId]);
 
   // Handle search with debounce
