@@ -156,18 +156,40 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({
 
   // Get category icon
   const getCategoryIcon = (category?: string): IconName => {
-    if (!category) return 'bookmark';
+    if (!category) return 'general';
     
     const icons: Record<string, IconName> = {
+      general: 'general',
+      personal: 'personal',
+      work: 'work',
       development: 'code',
-      design: 'edit',
+      design: 'designs',
       productivity: 'settings',
-      entertainment: 'video',
+      entertainment: 'entertainment',
       social: 'share',
-      default: 'bookmark'
+      hosting: 'hosting',
+      music: 'music',
+      chatbots: 'chatbots',
+      anime: 'anime',
+      learning: 'learning',
+      finance: 'finance',
+      shopping: 'shopping'
     };
     
-    return icons[category] || icons.default;
+    // Try to match category name to icon name (case-insensitive)
+    const lowerCategory = category.toLowerCase();
+    for (const [key, value] of Object.entries(icons)) {
+      if (lowerCategory.includes(key)) {
+        return value;
+      }
+    }
+    
+    // Default fallbacks by category first letter
+    const firstChar = lowerCategory.charAt(0);
+    if (['p', 'r'].includes(firstChar)) return 'personal';
+    if (['w', 'j', 'b'].includes(firstChar)) return 'work';
+    
+    return 'general';
   };
 
   // Render list view layout

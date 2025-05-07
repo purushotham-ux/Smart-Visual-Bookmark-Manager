@@ -3,7 +3,6 @@ import Icon, { IconName } from '../ui/Icon';
 import { User } from '../../types/User';
 import { useTheme } from '../../hooks/useTheme.js';
 import { useAuth } from '../../contexts/AuthContext';
-import ProfileSettingsModal from '../ProfileSettingsModal';
 
 type ViewType = 'grid' | 'list';
 
@@ -16,6 +15,7 @@ interface TopBarProps {
   onViewChange: (view: ViewType) => void;
   searchQuery?: string;
   setSearchQuery?: (query: string) => void;
+  onOpenProfileSettings: () => void;
 }
 
 const TopBar: React.FC<TopBarProps> = ({
@@ -27,13 +27,13 @@ const TopBar: React.FC<TopBarProps> = ({
   onAddBookmark,
   searchQuery: externalSearchQuery = '',
   setSearchQuery: externalSetSearchQuery,
+  onOpenProfileSettings,
 }) => {
   const { isDarkMode, toggleDarkMode } = useTheme();
   const { logOut } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   
   const actualSearchQuery = externalSetSearchQuery ? externalSearchQuery : internalSearchQuery;
   const setActualSearchQuery = (query: string) => {
@@ -202,7 +202,7 @@ const TopBar: React.FC<TopBarProps> = ({
 
             {/* User Dropdown Menu */}
             {isUserMenuOpen && (
-              <div className="absolute left-1/2 bottom-0 translate-x-[-50%] translate-y-full rounded-lg shadow-lg py-1 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm ring-1 ring-black ring-opacity-5 focus:outline-none px-2.5 divide-y divide-gray-200 dark:divide-gray-700">
+              <div className="absolute right-0 top-full mt-2 rounded-lg shadow-lg py-1 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm ring-1 ring-black ring-opacity-5 focus:outline-none px-2.5 divide-y divide-gray-200 dark:divide-gray-700 z-50 min-w-[200px]">
                 <div className="px-4 py-3">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
                     {user.displayName || 'User'}
@@ -216,7 +216,10 @@ const TopBar: React.FC<TopBarProps> = ({
                   <MenuItem
                     label="Profile Settings"
                     icon="settings"
-                    onClick={() => setIsProfileModalOpen(true)}
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      onOpenProfileSettings();
+                    }}
                   />
                 </div>
                 
@@ -233,9 +236,6 @@ const TopBar: React.FC<TopBarProps> = ({
           </div>
         </div>
       </div>
-      {isProfileModalOpen && (
-        <ProfileSettingsModal user={user} onClose={() => setIsProfileModalOpen(false)} />
-      )}
     </header>
   );
 };

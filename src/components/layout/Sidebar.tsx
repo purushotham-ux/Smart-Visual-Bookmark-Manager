@@ -3,6 +3,7 @@ import Icon from '../ui/Icon';
 import { useCategories } from '../../hooks/useCategories';
 import { useTags } from '../../hooks/useTags';
 import { Category } from '../../types/User';
+import ImportExport from '../ImportExport';
 
 interface SidebarProps {
   userId: string;
@@ -28,7 +29,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   
   const [expandedSections, setExpandedSections] = useState({
     collections: true,
-    tags: true
   });
   
   const [isAddingCollection, setIsAddingCollection] = useState(false);
@@ -37,8 +37,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [newCollectionName, setNewCollectionName] = useState('');
   const [categoryIcon, setCategoryIcon] = useState<string>('bookmark');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [showImportExport, setShowImportExport] = useState<boolean>(false);
 
-  const toggleSection = (section: 'collections' | 'tags') => {
+  const toggleSection = (section: 'collections') => {
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section]
@@ -126,13 +127,55 @@ const Sidebar: React.FC<SidebarProps> = ({
     setNewCollectionName('');
   };
 
+  const handleImportComplete = () => {
+    // Refresh the categories or bookmarks as needed
+    setShowImportExport(false);
+  };
+
   const iconOptions: Array<{ icon: string, label: string }> = [
     { icon: 'bookmark', label: 'Bookmark' },
     { icon: 'code', label: 'Code' },
     { icon: 'video', label: 'Video' },
     { icon: 'star', label: 'Star' },
     { icon: 'tag', label: 'Tag' },
+    { icon: 'hosting', label: 'Hosting' },
+    { icon: 'entertainment', label: 'Entertainment' },
+    { icon: 'music', label: 'Music' },
+    { icon: 'chatbots', label: 'Chatbots' },
+    { icon: 'humanizer', label: 'Humanizer' },
+    { icon: 'anime', label: 'Anime' },
+    { icon: 'designs', label: 'Designs' },
+    { icon: 'shopping', label: 'Shopping' },
+    { icon: 'learning', label: 'Learning' },
+    { icon: 'finance', label: 'Finance' },
   ];
+
+  // Function to automatically select a suitable icon for a category name
+  const getSuitableIconForCategory = (category: Category) => {
+    // If the category already has an icon, use it
+    if (category.icon) return category.icon as any;
+    
+    // Special keywords mapping to specific icons
+    const categoryNameLower = category.name.toLowerCase();
+    
+    // Map common category names to appropriate icons
+    if (categoryNameLower.includes('general')) return 'general';
+    if (categoryNameLower.includes('personal')) return 'personal';
+    if (categoryNameLower.includes('work')) return 'work';
+    if (categoryNameLower.includes('dev') || categoryNameLower.includes('code')) return 'code';
+    if (categoryNameLower.includes('design')) return 'designs';
+    if (categoryNameLower.includes('video') || categoryNameLower.includes('watch')) return 'video';
+    if (categoryNameLower.includes('music') || categoryNameLower.includes('audio')) return 'music';
+    if (categoryNameLower.includes('shop') || categoryNameLower.includes('store')) return 'shopping';
+    if (categoryNameLower.includes('learn') || categoryNameLower.includes('course')) return 'learning';
+    if (categoryNameLower.includes('chat') || categoryNameLower.includes('bot')) return 'chatbots';
+    if (categoryNameLower.includes('finance') || categoryNameLower.includes('money')) return 'finance';
+    if (categoryNameLower.includes('host') || categoryNameLower.includes('server')) return 'hosting';
+    if (categoryNameLower.includes('anime') || categoryNameLower.includes('manga')) return 'anime';
+    
+    // Default to bookmark icon if no matches
+    return 'bookmark';
+  };
 
   return (
     <aside 
@@ -152,7 +195,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           {/* Primary Navigation */}
           <div className="space-y-1.5">
             <NavItem 
-              icon="home" 
+              icon="general" 
               label="All Bookmarks" 
               isActive={selectedCategory === 'all' && selectedTags.length === 0}
               isCollapsed={isCollapsed}
@@ -184,6 +227,55 @@ const Sidebar: React.FC<SidebarProps> = ({
               }}
             />
           </div>
+          
+          {/* Import/Export Buttons - Moved to here for better visibility */}
+          {!isCollapsed && (
+            <div className="flex space-x-2 mt-4 mb-2">
+              <button
+                onClick={() => setShowImportExport(true)}
+                className="flex-1 flex items-center justify-center p-2 rounded-md 
+                  text-gray-700 dark:text-gray-300 
+                  bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600
+                  hover:bg-gray-200 dark:hover:bg-gray-600 
+                  transition-all duration-200"
+                title="Import bookmarks"
+              >
+                <Icon name="import" size="sm" className="mr-2 text-primary-500" />
+                <span className="text-sm font-medium">Import</span>
+              </button>
+              
+              <button
+                onClick={() => setShowImportExport(true)}
+                className="flex-1 flex items-center justify-center p-2 rounded-md 
+                  text-gray-700 dark:text-gray-300 
+                  bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600
+                  hover:bg-gray-200 dark:hover:bg-gray-600 
+                  transition-all duration-200"
+                title="Export bookmarks"
+              >
+                <Icon name="export" size="sm" className="mr-2 text-primary-500" />
+                <span className="text-sm font-medium">Export</span>
+              </button>
+            </div>
+          )}
+
+          {/* ImportExport Modal */}
+          {showImportExport && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full animate-fade-in-up relative p-6">
+                <div className="flex items-center justify-between mb-4 border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Import/Export Bookmarks</h2>
+                  <button 
+                    onClick={() => setShowImportExport(false)}
+                    className="p-2 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <Icon name="close" size="sm" />
+                  </button>
+                </div>
+                <ImportExport userId={userId} onImportComplete={handleImportComplete} />
+              </div>
+            </div>
+          )}
           
           {/* Collections Section */}
           <div className="mt-8">
@@ -306,7 +398,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                       
                       <div className="flex items-center">
                         <NavItem 
-                          icon={category.icon as any || undefined}
+                          icon={
+                            category.name.toLowerCase() === 'general' ? 'general' :
+                            category.name.toLowerCase() === 'work' ? 'work' :
+                            category.name.toLowerCase() === 'personal' ? 'personal' :
+                            getSuitableIconForCategory(category)
+                          }
                           label={category.name}
                           isActive={selectedCategory === category.id}
                           isCollapsed={isCollapsed}
@@ -344,63 +441,13 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
           </div>
-          
-          {/* Tags Section */}
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-2">
-              <SectionHeader 
-                title="Tags"
-                isCollapsed={isCollapsed}
-                isExpanded={expandedSections.tags}
-                onToggle={() => toggleSection('tags')}
-              />
-              
-              {!isCollapsed && (
-                <button
-                  onClick={() => {}}
-                  className="p-1.5 rounded-full text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700"
-                  title="Manage Tags"
-                >
-                  <Icon name="tag" size="sm" />
-                </button>
-              )}
-            </div>
-            
-            {expandedSections.tags && !isCollapsed && (
-              <div className="mt-3 space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-                {isLoadingTags ? (
-                  <div className="px-2 py-3">
-                    <div className="animate-pulse flex flex-wrap gap-2">
-                      <div className="h-8 w-16 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-                      <div className="h-8 w-20 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-                      <div className="h-8 w-14 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-                      <div className="h-8 w-18 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-                    </div>
-                  </div>
-                ) : tagNames.length === 0 ? (
-                  <div className="px-3 py-4 text-sm text-gray-500 dark:text-gray-400 text-center rounded-md bg-gray-50 dark:bg-gray-700/50">
-                    No tags yet
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2 px-2 py-1">
-                    {tagNames.map((tagName, tagIndex) => (
-                      <TagPill
-                        key={tagIndex}
-                        label={tagName}
-                        isSelected={selectedTags.includes(tagName)}
-                        onClick={() => handleTagClick(tagName)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
         </nav>
       </div>
       
       {/* Bottom Utilities */}
-      <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800 shadow-inner">
+      <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800 shadow-inner space-y-3">
+        {/* Import/Export Buttons moved to top section */}
+        
         <button
           onClick={onToggleCollapse}
           className={`
@@ -494,33 +541,6 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
         </>
       )}
     </div>
-  );
-};
-
-interface TagPillProps {
-  label: string;
-  isSelected: boolean;
-  onClick: () => void;
-}
-
-const TagPill: React.FC<TagPillProps> = ({
-  label,
-  isSelected,
-  onClick,
-}) => {
-  return (
-    <button
-      onClick={onClick}
-      className={`
-        inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium
-        transition-all duration-200
-        ${isSelected 
-          ? 'bg-gradient-secondary text-white shadow-sm hover:shadow-teal-glow'
-          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}
-      `}
-    >
-      <span className="truncate max-w-[160px]">{label}</span>
-    </button>
   );
 };
 

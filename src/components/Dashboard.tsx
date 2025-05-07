@@ -13,6 +13,7 @@ import Icon from './ui/Icon';
 import Button from './ui/Button';
 import { getSampleBookmarks, generateSampleBookmark } from '../services/sampleData';
 import { useNotification } from '../contexts/NotificationContext';
+import ProfileSettingsModal from './ProfileSettingsModal';
 
 interface DashboardProps {
   user: User;
@@ -35,6 +36,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [isLoadingSamples, setIsLoadingSamples] = useState<boolean>(false);
   const [isPageLoading, setIsPageLoading] = useState<boolean>(true);
   const [editBookmark, setEditBookmark] = useState<Bookmark | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   
   // Custom hooks for data management
   const { 
@@ -280,6 +282,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         onViewChange={setActiveView}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        onOpenProfileSettings={() => setIsProfileModalOpen(true)}
       />
 
       {/* Main Layout */}
@@ -412,6 +415,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                            selectedCategory !== 'favorites' && 
                            selectedCategory !== 'recent' ? 
                            selectedCategory : undefined}
+        />
+      )}
+
+      {/* Profile Settings Modal - Moved to Dashboard level for proper z-index behavior */}
+      {isProfileModalOpen && (
+        <ProfileSettingsModal 
+          user={user} 
+          onClose={() => setIsProfileModalOpen(false)} 
         />
       )}
     </div>

@@ -6,7 +6,8 @@ import {
   signInWithGithub, 
   signInWithEmail, 
   registerWithEmail,
-  resetPassword 
+  resetPassword,
+  updateUserPassword
 } from '../services/firebase';
 import { User as FirebaseUser } from 'firebase/auth';
 import { User } from '../types/User';
@@ -19,11 +20,12 @@ interface AuthContextType {
   signInWithEmailAuth: (email: string, password: string) => Promise<void>;
   registerWithEmailAuth: (email: string, password: string, displayName: string) => Promise<void>;
   resetPasswordAuth: (email: string) => Promise<void>;
+  updatePasswordAuth: (currentPassword: string, newPassword: string) => Promise<void>;
   logOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function useAuth() {
   const context = useContext(AuthContext);
@@ -125,6 +127,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const updatePasswordAuth = async (currentPassword: string, newPassword: string) => {
+    try {
+      await updateUserPassword(currentPassword, newPassword);
+    } catch (error) {
+      console.error('Failed to update password:', error);
+      throw error;
+    }
+  };
+
   const logOut = async () => {
     try {
       await signOut(auth);
@@ -156,6 +167,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signInWithEmailAuth,
     registerWithEmailAuth,
     resetPasswordAuth,
+    updatePasswordAuth,
     logOut,
     refreshUser
   };

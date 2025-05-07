@@ -11,7 +11,10 @@ import {
   setPersistence,
   browserLocalPersistence,
   sendPasswordResetEmail,
-  updateProfile
+  updateProfile,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -138,6 +141,30 @@ export const resetPassword = async (email: string): Promise<void> => {
       throw error;
     } else {
       throw new Error('Failed to send password reset email');
+    }
+  }
+};
+
+export const updateUserPassword = async (currentPassword: string, newPassword: string): Promise<void> => {
+  try {
+    const user = auth.currentUser;
+    if (!user || !user.email) {
+      throw new Error('No user is currently logged in');
+    }
+    
+    // Re-authenticate user first
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    await reauthenticateWithCredential(user, credential);
+    
+    // Then update password
+    await updatePassword(user, newPassword);
+    
+  } catch (error) {
+    console.error('Error updating password:', error);
+    if (error instanceof Error) {
+      throw error;
+    } else {
+      throw new Error('Failed to update password');
     }
   }
 };
