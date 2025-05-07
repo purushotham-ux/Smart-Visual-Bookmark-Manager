@@ -4,7 +4,7 @@ import { useTheme } from '../hooks/useTheme.js';
 import Icon from './ui/Icon';
 
 const Login: React.FC = () => {
-  const { signInWithEmailAuth, signInWithGoogleAuth, signInWithGithubAuth, registerWithEmailAuth } = useAuth();
+  const { signInWithEmailAuth, signInWithGoogleAuth, signInWithGithubAuth, registerWithEmailAuth, resetPasswordAuth } = useAuth();
   const { isDarkMode, toggleDarkMode } = useTheme();
   
   const [email, setEmail] = useState<string>('');
@@ -14,6 +14,8 @@ const Login: React.FC = () => {
   const [isLoginMode, setIsLoginMode] = useState<boolean>(true);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [resetSent, setResetSent] = useState<boolean>(false);
+  const [displayName, setDisplayName] = useState<string>('');
 
   // Handle animation on mode change
   useEffect(() => {
@@ -58,13 +60,18 @@ const Login: React.FC = () => {
       return;
     }
     
+    if (!isLoginMode && !displayName) {
+      setError('Name is required for registration');
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
       if (isLoginMode) {
         await signInWithEmailAuth(email, password);
       } else {
-        await registerWithEmailAuth(email, password);
+        await registerWithEmailAuth(email, password, displayName);
       }
     } catch (error) {
       console.error('Authentication error:', error);
@@ -97,6 +104,26 @@ const Login: React.FC = () => {
     } catch (error) {
       console.error('GitHub sign in error:', error);
       setError('Failed to sign in with GitHub. Please try again.');
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      await resetPasswordAuth(email);
+      setResetSent(true);
+    } catch (error) {
+      console.error('Password reset error:', error);
+      setError('Failed to send password reset email. Please check your email address and try again.');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -147,11 +174,13 @@ const Login: React.FC = () => {
                     <div className="bg-gradient-to-r from-primary-600 to-primary-500 w-24 h-24 rounded-xl flex items-center justify-center shadow-lg transform transition-transform hover:rotate-6">
                       <svg className="w-14 h-14 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M17 4H7C5.9 4 5.01 4.9 5.01 6L5 20L12 17L19 20V6C19 4.9 18.1 4 17 4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+                      </svg>
                     </div>
-                    <div className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full bg-primary-300 border-2 border-slate-900"></div>
                   </div>
-      </div>
+                  <div className= "px-2  " >
+                    <h1 className="font-bold mb-2 text-center text-white">Bookmark Hub</h1>
+                  </div>
+                </div>
 
                 <h2 className="text-2xl font-bold mb-2 text-center gradient-text">
                   {isLoginMode ? 'Welcome back' : 'Create account'}
@@ -190,6 +219,8 @@ const Login: React.FC = () => {
                         name="name"
                         type="text"
                         required={!isLoginMode}
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
                         className="bg-slate-800/50 border border-slate-700 text-white block w-full pl-10 pr-3 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-slate-600"
                         placeholder="Your name"
                       />
@@ -225,7 +256,7 @@ const Login: React.FC = () => {
                     {isLoginMode && (
                       <button
                         type="button"
-                        onClick={() => console.log("Forgot password")}
+                        onClick={handleForgotPassword}
                         className="text-sm text-primary-400 hover:text-primary-300 focus:outline-none focus:underline transition-colors duration-200">
                         Forgot password?
                       </button>
@@ -352,6 +383,18 @@ const Login: React.FC = () => {
         </div>
         </div>
       </div>
+      {resetSent && (
+        <div className="mx-8 my-4 bg-green-900/40 border border-green-800/50 rounded-lg px-4 py-3">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <Icon name="star" className="h-5 w-5 text-green-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-green-300">Password reset email sent! Please check your inbox.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

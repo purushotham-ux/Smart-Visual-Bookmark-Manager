@@ -9,7 +9,9 @@ import {
   Auth, 
   User,
   setPersistence,
-  browserLocalPersistence
+  browserLocalPersistence,
+  sendPasswordResetEmail,
+  updateProfile
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -18,6 +20,7 @@ import {
   CACHE_SIZE_UNLIMITED
 } from 'firebase/firestore';
 import { getAnalytics, Analytics } from 'firebase/analytics';
+import { getStorage } from 'firebase/storage';
 
 // Your Firebase configuration
 const firebaseConfig = {
@@ -39,6 +42,7 @@ export const db: Firestore = getFirestore(app);
 export const analytics: Analytics = getAnalytics(app);
 export const googleProvider: GoogleAuthProvider = new GoogleAuthProvider();
 export const githubProvider: GithubAuthProvider = new GithubAuthProvider();
+export const storage = getStorage(app);
 
 // Enable offline persistence for Firestore
 enableIndexedDbPersistence(db)
@@ -106,9 +110,14 @@ export const signInWithEmail = async (email: string, password: string): Promise<
   }
 };
 
-export const registerWithEmail = async (email: string, password: string): Promise<User> => {
+export const registerWithEmail = async (email: string, password: string, displayName: string): Promise<User> => {
   try {
     const result = await createUserWithEmailAndPassword(auth, email, password);
+    // Update the user's display name and photo URL
+    await updateProfile(result.user, {
+      displayName: displayName,
+      photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`
+    });
     return result.user;
   } catch (error) {
     console.error('Error registering with email', error);
@@ -116,6 +125,19 @@ export const registerWithEmail = async (email: string, password: string): Promis
       throw error;
     } else {
       throw new Error('Failed to register with email and password');
+    }
+  }
+};
+
+export const resetPassword = async (email: string): Promise<void> => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    if (error instanceof Error) {
+      throw error;
+    } else {
+      throw new Error('Failed to send password reset email');
     }
   }
 };

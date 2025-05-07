@@ -7,6 +7,7 @@ import TopBar from './layout/TopBar';
 import { useAuth } from '../contexts/AuthContext';
 import { useBookmarks } from '../hooks/useBookmarks';
 import { useCategories } from '../hooks/useCategories';
+// @ts-ignore - Import JavaScript file
 import { useTheme } from '../hooks/useTheme.js';
 import Icon from './ui/Icon';
 import Button from './ui/Button';
@@ -173,7 +174,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       
       <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
         <Button
-          variant="primary"
+          variant="secondary"
                 onClick={() => setIsAddModalOpen(true)}
           leftIcon={<Icon name="plus" />}
           fullWidth
@@ -287,7 +288,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                   </p>
                 </div>
                 <Button
-                  variant="primary"
+                  variant="secondary"
                   onClick={() => setIsAddModalOpen(true)}
                   leftIcon={<Icon name="plus" />}
                   className="hidden md:flex mt-4 md:mt-0 transform transition-transform duration-200 hover:scale-105"
@@ -346,7 +347,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             {/* Mobile Add Button - Fixed at the bottom for easy access on mobile */}
             <div className="md:hidden fixed bottom-6 right-6 z-20">
               <Button
-                variant="primary"
+                variant="secondary"
                 onClick={() => setIsAddModalOpen(true)}
                 className="rounded-full w-14 h-14 flex items-center justify-center shadow-lg transform transition-transform duration-200 hover:scale-110 active:scale-95"
                 aria-label="Add bookmark"

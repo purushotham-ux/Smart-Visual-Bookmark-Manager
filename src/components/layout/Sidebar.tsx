@@ -141,13 +141,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         h-full fixed left-0 top-20 bottom-0 bg-white dark:bg-gray-800 
         border-r border-gray-200 dark:border-gray-700 
         transition-all duration-300 ease-in-out
-        overflow-hidden z-20
-        flex flex-col
+        z-20 flex flex-col
+        shadow-md
       `}
     >
       {/* Main Navigation with Scrolling */}
       <div className="h-full overflow-y-auto custom-scrollbar">
-        <nav className={`px-4 py-5 ${isCollapsed ? 'px-2' : ''}`}>
+        <nav className={`px-4 py-5 ${isCollapsed ? 'px-2' : 'px-6'}`}>
           {/* Primary Navigation */}
           <div className="space-y-1.5">
             <NavItem 
@@ -197,7 +197,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               {!isCollapsed && !isAddingCollection && !isEditingCollection && (
                 <button
                   onClick={handleAddCollection}
-                  className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="p-1.5 rounded-full text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700"
                   title="Add Collection"
                 >
                   <Icon name="plus" size="sm" />
@@ -206,15 +206,15 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
             
             {expandedSections.collections && !isCollapsed && (
-              <div className="mt-2 space-y-1.5 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+              <div className="mt-3 space-y-2 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                 {(isAddingCollection || isEditingCollection) && (
-                  <div className="p-3 rounded-md bg-gray-50 dark:bg-gray-700 space-y-3">
+                  <div className="p-3 rounded-md bg-white dark:bg-gray-700 space-y-3 border border-gray-200 dark:border-gray-600 shadow-sm">
                     <input
                       type="text"
                       value={newCollectionName}
                       onChange={(e) => setNewCollectionName(e.target.value)}
                       placeholder="Collection name"
-                      className="w-full py-2 px-3 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full py-2 px-3 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-800 dark:text-white"
                       autoFocus
                     />
                     
@@ -320,7 +320,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                               e.stopPropagation();
                               handleEditCollection(category);
                             }}
-                            className="ml-1 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                            className="ml-1 p-1 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
                             title="Edit collection"
                           >
                             <Icon name="edit" size="sm" />
@@ -330,7 +330,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                               e.stopPropagation();
                               setShowDeleteConfirm(category.id);
                             }}
-                            className="ml-1 p-1 text-gray-400 hover:text-red-500 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                            className="ml-1 p-1 text-gray-600 dark:text-gray-400 hover:text-red-500 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
                             title="Delete collection"
                           >
                             <Icon name="close" size="sm" />
@@ -357,7 +357,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               {!isCollapsed && (
                 <button
                   onClick={() => {}}
-                  className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="p-1.5 rounded-full text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700"
                   title="Manage Tags"
                 >
                   <Icon name="tag" size="sm" />
@@ -366,28 +366,28 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
             
             {expandedSections.tags && !isCollapsed && (
-              <div className="mt-2 space-y-1 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+              <div className="mt-3 space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                 {isLoadingTags ? (
                   <div className="px-2 py-3">
                     <div className="animate-pulse flex flex-wrap gap-2">
-                      <div className="h-7 w-16 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-                      <div className="h-7 w-20 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-                      <div className="h-7 w-14 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-                      <div className="h-7 w-18 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                      <div className="h-8 w-16 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                      <div className="h-8 w-20 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                      <div className="h-8 w-14 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                      <div className="h-8 w-18 rounded-full bg-gray-300 dark:bg-gray-600"></div>
                     </div>
                   </div>
-                ) : Object.keys(tagNames).length === 0 ? (
-                  <div className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 text-center rounded-md bg-gray-50 dark:bg-gray-700/50">
+                ) : tagNames.length === 0 ? (
+                  <div className="px-3 py-4 text-sm text-gray-500 dark:text-gray-400 text-center rounded-md bg-gray-50 dark:bg-gray-700/50">
                     No tags yet
                   </div>
                 ) : (
-                  <div className="flex flex-wrap gap-2 px-2">
-                    {Object.entries(tagNames).map(([tagId, tagName]) => (
+                  <div className="flex flex-wrap gap-2 px-2 py-1">
+                    {tagNames.map((tagName, tagIndex) => (
                       <TagPill
-                        key={tagId}
+                        key={tagIndex}
                         label={tagName}
-                        isSelected={selectedTags.includes(tagId)}
-                        onClick={() => handleTagClick(tagId)}
+                        isSelected={selectedTags.includes(tagName)}
+                        onClick={() => handleTagClick(tagName)}
                       />
                     ))}
                   </div>
@@ -404,13 +404,15 @@ const Sidebar: React.FC<SidebarProps> = ({
           onClick={onToggleCollapse}
           className={`
             w-full flex items-center justify-center p-2.5 rounded-md 
-            text-gray-600 dark:text-gray-300 
-            bg-gray-100 dark:bg-gray-700
+            text-gray-700 dark:text-gray-300 
+            bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600
             hover:bg-gray-200 dark:hover:bg-gray-600 
             transition-all duration-200
+            ${!isCollapsed ? 'hover:shadow-sm' : ''}
           `}
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          <Icon name={isCollapsed ? 'chevron-right' : 'chevron-left'} size={isCollapsed ? 'md' : 'sm'} />
+          <Icon name={isCollapsed ? 'chevron-right' : 'chevron-left'} size={isCollapsed ? 'md' : 'sm'} className="text-primary-500" />
           {!isCollapsed && <span className="ml-2 text-sm font-medium">Collapse Sidebar</span>}
         </button>
       </div>
@@ -440,10 +442,14 @@ const NavItem: React.FC<NavItemProps> = ({
   return (
     <div
       className={`
-        flex items-center py-2 px-3 rounded-md cursor-pointer 
-        ${isActive ? 'bg-primary-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}
+        flex items-center py-2.5 px-3 rounded-md cursor-pointer 
+        ${isActive 
+          ? 'bg-primary-500 text-white shadow-sm' 
+          : 'text-gray-800 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:shadow-sm'
+        }
         ${indented ? 'ml-2' : ''}
         ${className}
+        transition-all duration-200
       `}
       onClick={onClick}
     >
@@ -453,7 +459,7 @@ const NavItem: React.FC<NavItemProps> = ({
         </div>
       )}
       {!isCollapsed && (
-        <span className="flex-grow truncate">{label}</span>
+        <span className="flex-grow truncate font-medium">{label}</span>
       )}
     </div>
   );
@@ -473,14 +479,14 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
   onToggle,
 }) => {
   return (
-    <div className="flex items-center" onClick={onToggle}>
+    <div className="flex items-center cursor-pointer" onClick={onToggle}>
       {!isCollapsed && (
         <>
-          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-400 uppercase tracking-wider">
             {title}
           </h3>
           <button
-            className="ml-1.5 text-gray-400 focus:outline-none"
+            className="ml-1.5 text-gray-600 dark:text-gray-400 focus:outline-none"
             title={isExpanded ? `Collapse ${title}` : `Expand ${title}`}
           >
             <Icon
@@ -508,51 +514,19 @@ const TagPill: React.FC<TagPillProps> = ({
 }) => {
   return (
     <button
-      className={`
-        px-3 py-1 rounded-full text-xs font-medium 
-        ${isSelected 
-          ? 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200 ring-1 ring-primary-400' 
-          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}
-        transition-colors
-      `}
       onClick={onClick}
+      className={`
+        py-1.5 px-3 rounded-full text-sm font-medium
+        transition-all duration-200
+        ${isSelected 
+          ? 'bg-primary-500 text-white'
+          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        }
+      `}
     >
       {label}
     </button>
   );
 };
-
-// Add custom scrollbar styles
-const scrollbarStyles = `
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(156, 163, 175, 0.3);
-    border-radius: 3px;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(156, 163, 175, 0.5);
-  }
-  
-  /* For Firefox */
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
-  }
-`;
-
-// Inject the scrollbar styles
-if (typeof document !== 'undefined') {
-  const styleElement = document.createElement('style');
-  styleElement.textContent = scrollbarStyles;
-  document.head.appendChild(styleElement);
-}
 
 export default Sidebar; 

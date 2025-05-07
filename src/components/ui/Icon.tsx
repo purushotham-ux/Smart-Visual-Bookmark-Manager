@@ -27,21 +27,38 @@ export type IconName =
   | 'clock'
   | 'filter'
   | 'tag'
+  | 'trash'
   | 'logout';
 
 interface IconProps {
   name: IconName;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
   className?: string;
   id?: string;
 }
 
 const Icon: React.FC<IconProps> = ({ name, size = 'md', className = '', id }) => {
   const sizeClasses = {
-    sm: 'w-6 h-6',
-    md: 'w-7 h-7',
+    xs: 'svg-xs', // 16px
+    sm: 'svg-sm', // 20px
+    md: 'svg-md', // 24px
+    lg: 'svg-lg', // 32px
+    xl: 'svg-xl', // 40px
+    '2xl': 'svg-2xl', // 48px
+    '3xl': 'svg-3xl', // 64px
+    '4xl': 'svg-4xl', // 80px
+  };
+
+  // For backward compatibility until all SVG classes are applied
+  const fallbackSizeClasses = {
+    xs: 'w-4 h-4',
+    sm: 'w-5 h-5',
+    md: 'w-6 h-6',
     lg: 'w-8 h-8',
-    xl: 'w-12 h-12',
+    xl: 'w-10 h-10',
+    '2xl': 'w-12 h-12',
+    '3xl': 'w-16 h-16',
+    '4xl': 'w-20 h-20',
   };
 
   const icons: Record<IconName, JSX.Element> = {
@@ -81,6 +98,11 @@ const Icon: React.FC<IconProps> = ({ name, size = 'md', className = '', id }) =>
       </svg>
     ),
     delete: (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+    ),
+    trash: (
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
       </svg>
@@ -183,8 +205,9 @@ const Icon: React.FC<IconProps> = ({ name, size = 'md', className = '', id }) =>
     ),
   };
 
+  // Try to use the new SVG size classes, fall back to the old width/height classes
   return (
-    <div id={id} className={`${sizeClasses[size]} ${className}`}>
+    <div id={id} className={`${sizeClasses[size]} ${fallbackSizeClasses[size]} ${className}`}>
       {icons[name]}
     </div>
   );

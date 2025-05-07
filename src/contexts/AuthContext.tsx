@@ -5,8 +5,10 @@ import {
   signInWithGoogle, 
   signInWithGithub, 
   signInWithEmail, 
-  registerWithEmail 
+  registerWithEmail,
+  resetPassword 
 } from '../services/firebase';
+import { User as FirebaseUser } from 'firebase/auth';
 import { User } from '../types/User';
 
 interface AuthContextType {
@@ -15,8 +17,10 @@ interface AuthContextType {
   signInWithGoogleAuth: () => Promise<void>;
   signInWithGithubAuth: () => Promise<void>;
   signInWithEmailAuth: (email: string, password: string) => Promise<void>;
-  registerWithEmailAuth: (email: string, password: string) => Promise<void>;
+  registerWithEmailAuth: (email: string, password: string, displayName: string) => Promise<void>;
+  resetPasswordAuth: (email: string) => Promise<void>;
   logOut: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -103,11 +107,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const registerWithEmailAuth = async (email: string, password: string) => {
+  const registerWithEmailAuth = async (email: string, password: string, displayName: string) => {
     try {
-      await registerWithEmail(email, password);
+      await registerWithEmail(email, password, displayName);
     } catch (error) {
       console.error('Failed to register with email:', error);
+      throw error;
+    }
+  };
+
+  const resetPasswordAuth = async (email: string) => {
+    try {
+      await resetPassword(email);
+    } catch (error) {
+      console.error('Failed to reset password:', error);
       throw error;
     }
   };
@@ -121,6 +134,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const refreshUser = async () => {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      const user = auth.currentUser;
+      const appUser: User = {
+        uid: user.uid,
+        email: user.email || '',
+        displayName: user.displayName || user.email || 'User',
+        photoURL: user.photoURL || undefined
+      };
+      setCurrentUser(appUser);
+    }
+  };
+
   const value = {
     currentUser,
     loading,
@@ -128,7 +155,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signInWithGithubAuth,
     signInWithEmailAuth,
     registerWithEmailAuth,
-    logOut
+    resetPasswordAuth,
+    logOut,
+    refreshUser
   };
 
   return (

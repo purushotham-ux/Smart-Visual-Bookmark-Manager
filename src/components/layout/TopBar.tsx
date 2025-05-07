@@ -3,6 +3,7 @@ import Icon, { IconName } from '../ui/Icon';
 import { User } from '../../types/User';
 import { useTheme } from '../../hooks/useTheme.js';
 import { useAuth } from '../../contexts/AuthContext';
+import ProfileSettingsModal from '../ProfileSettingsModal';
 
 type ViewType = 'grid' | 'list';
 
@@ -27,6 +28,7 @@ const TopBar: React.FC<TopBarProps> = ({
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   
   const searchRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -187,7 +189,7 @@ const TopBar: React.FC<TopBarProps> = ({
                   <MenuItem
                     label="Profile Settings"
                     icon="settings"
-                    onClick={() => console.log('profile settings')}
+                    onClick={() => setIsProfileModalOpen(true)}
                   />
                 </div>
                 
@@ -204,6 +206,9 @@ const TopBar: React.FC<TopBarProps> = ({
           </div>
         </div>
       </div>
+      {isProfileModalOpen && (
+        <ProfileSettingsModal user={user} onClose={() => setIsProfileModalOpen(false)} />
+      )}
     </header>
   );
 };

@@ -16,6 +16,7 @@ module.exports = {
           700: '#4338ca',
           800: '#3730a3',
           900: '#312e81',
+          950: '#1e1b4b',
         },
         secondary: {
           DEFAULT: '#36D6BD',
@@ -57,29 +58,62 @@ module.exports = {
           900: '#6A4500',
         },
         error: {
+          50: '#fef2f2',
+          100: '#fee2e2',
+          200: '#fecaca',
           300: '#fca5a5',
           400: '#f87171',
           500: '#ef4444',
+          600: '#dc2626',
           700: '#b91c1c',
           800: '#991b1b',
           900: '#7f1d1d',
+          950: '#450a0a',
         },
         gray: {
-          50: '#FFFFFF',
-          100: '#F7F9FC',
-          200: '#EDF1F7',
-          300: '#E1E5ED',
-          400: '#C5CAD5',
-          500: '#8D95A5',
-          600: '#646E82',
-          700: '#4A5367',
-          800: '#2D3343',
-          900: '#141721',
+          50: '#F9FAFB',
+          100: '#F3F4F6',
+          200: '#E5E7EB',
+          300: '#D1D5DB',
+          400: '#9CA3AF',
+          500: '#6B7280',
+          600: '#4B5563',
+          700: '#374151',
+          800: '#1F2937',
+          900: '#111827',
+          950: '#030712',
+        },
+        neutral: {
+          50: '#fafafa',
+          100: '#f5f5f5',
+          200: '#e5e5e5',
+          300: '#d4d4d4',
+          400: '#a3a3a3',
+          500: '#737373',
+          600: '#525252',
+          700: '#404040',
+          800: '#262626',
+          900: '#171717',
+          950: '#0a0a0a',
+        },
+        slate: {
+          50: '#f8fafc',
+          100: '#f1f5f9',
+          200: '#e2e8f0',
+          300: '#cbd5e1',
+          400: '#94a3b8',
+          500: '#64748b',
+          600: '#475569',
+          700: '#334155',
+          800: '#1e293b',
+          900: '#0f172a',
+          950: '#020617',
         },
       },
       fontFamily: {
         sans: ['Inter var', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
         mono: ['Roboto Mono', 'monospace'],
+        poppins: ['Poppins', 'sans-serif'],
       },
       spacing: {
         '4': '4px',
@@ -103,21 +137,39 @@ module.exports = {
       borderRadius: {
         'DEFAULT': '12px',
         'sm': '8px',
+        'md': '10px',
         'lg': '16px',
+        'xl': '24px',
+        '2xl': '32px',
+        'full': '9999px',
       },
       boxShadow: {
         'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
         'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        'light': '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03)',
+        'medium': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        'heavy': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        'colored': '0 4px 14px 0 rgba(99, 102, 241, 0.2)',
       },
       transitionDuration: {
         'DEFAULT': '300ms',
+        '150': '150ms',
+        '200': '200ms',
+        '400': '400ms',
+        '500': '500ms',
       },
       transitionTimingFunction: {
         'DEFAULT': 'cubic-bezier(0.4, 0, 0.2, 1)',
+        'in-out': 'cubic-bezier(0.4, 0, 0.2, 1)',
+        'in': 'cubic-bezier(0.4, 0, 1, 1)',
+        'out': 'cubic-bezier(0, 0, 0.2, 1)',
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'blob': 'blob 7s infinite',
+        'floating': 'floating 3s ease-in-out infinite',
+        'fade-in': 'fadeIn 0.5s ease-out forwards',
+        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
       },
       keyframes: {
         blob: {
@@ -134,8 +186,78 @@ module.exports = {
             transform: 'translate(0px, 0px) scale(1)',
           },
         },
+        floating: {
+          '0%': {
+            transform: 'translateY(0px)',
+          },
+          '50%': {
+            transform: 'translateY(-10px)',
+          },
+          '100%': {
+            transform: 'translateY(0px)',
+          },
+        },
+        fadeIn: {
+          '0%': {
+            opacity: '0',
+          },
+          '100%': {
+            opacity: '1',
+          },
+        },
+        fadeInUp: {
+          '0%': {
+            opacity: '0',
+            transform: 'translateY(20px)',
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'translateY(0)',
+          },
+        },
+      },
+      svgSize: {
+        'xs': '16px',
+        'sm': '20px',
+        'md': '24px',
+        'lg': '32px',
+        'xl': '40px',
+        '2xl': '48px',
+        '3xl': '64px',
+        '4xl': '80px',
       },
     },
   },
-  plugins: [],
+  plugins: [
+    function({ addUtilities, theme }) {
+      const newUtilities = {};
+      
+      Object.entries(theme('svgSize')).forEach(([key, value]) => {
+        newUtilities[`.svg-${key}`] = {
+          'width': value,
+          'height': value,
+          'min-width': value,
+          'min-height': value,
+        };
+      });
+      
+      newUtilities['.backdrop-blur-xs'] = {
+        'backdrop-filter': 'blur(2px)',
+      };
+      newUtilities['.backdrop-blur-sm'] = {
+        'backdrop-filter': 'blur(4px)',
+      };
+      newUtilities['.backdrop-blur-md'] = {
+        'backdrop-filter': 'blur(8px)',
+      };
+      newUtilities['.backdrop-blur-lg'] = {
+        'backdrop-filter': 'blur(12px)',
+      };
+      newUtilities['.backdrop-blur-xl'] = {
+        'backdrop-filter': 'blur(16px)',
+      };
+      
+      addUtilities(newUtilities, ['responsive', 'hover']);
+    },
+  ],
 } 
