@@ -39,7 +39,7 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({
   // Determine aspect ratio class
   const aspectRatioClass = {
     '16:9': 'aspect-w-16 aspect-h-9',
-    '4:3': 'aspect-w-4 aspect-h-3',
+    '4:3': 'aspect-w-4 aspect-h-1',
     '1:1': 'aspect-w-1 aspect-h-1',
   }[aspectRatio];
   
@@ -162,9 +162,10 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({
   return (
     <div 
       className={`
-        group relative rounded-xl overflow-hidden bg-white dark:bg-gray-800 
-        border border-gray-200 dark:border-gray-700
-        ${isFeatured ? 'shadow-xl scale-105' : 'shadow-md hover:shadow-xl hover:translate-y-[-5px]'}
+        group relative rounded-xl overflow-hidden 
+        bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm
+        border border-gray-100 dark:border-gray-700
+        ${isFeatured ? 'shadow-xl scale-105' : 'shadow-md hover:shadow-lg hover:translate-y-[-5px]'}
         transition-all duration-300 ease-in-out cursor-pointer h-full w-full
         ${isFeatured ? 'z-10' : ''}
       `}
@@ -175,21 +176,21 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({
       {/* Favorite Indicator */}
       {isFavorite && (
         <div className="absolute top-3 right-3 z-20">
-          <div className="bg-primary-500 shadow-lg text-white p-1.5 rounded-full">
+          <div className="bg-gradient-warning shadow-md text-white p-1.5 rounded-full">
             <Icon name="star" size="sm" />
           </div>
         </div>
       )}
       
-      {/* Category Indicator */}
-      <div className={`absolute top-0 left-0 w-full h-1.5 ${getCategoryColor(bookmark.category)}`}></div>
+      {/* Category Indicator - Using gradient instead of solid color */}
+      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-primary"></div>
       
       {/* Thumbnail Section */}
       <div className={`${aspectRatioClass} bg-gray-100 dark:bg-gray-900 overflow-hidden relative`}>
         {bookmark.imageUrl && !imageError ? (
           <>
             {/* Gradient overlay for better text contrast */}
-            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent z-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/70 via-gray-900/30 to-transparent z-10"></div>
             
             {/* Skeleton loader */}
             <div className={`absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse ${isImageLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}></div>
@@ -203,7 +204,7 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({
             />
             
             {/* Domain overlay */}
-            <div className="absolute bottom-2 left-3 z-10 flex items-center bg-black/30 backdrop-blur-sm px-2 py-1 rounded-md">
+            <div className="absolute bottom-2 left-3 z-10 flex items-center bg-black/30 backdrop-blur-sm px-2.5 py-1.5 rounded-lg">
               {bookmark.favicon && (
                 <img 
                   src={bookmark.favicon} 
@@ -218,7 +219,7 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({
             </div>
           </>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 p-4">
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 p-4">
             {bookmark.favicon ? (
               <img 
                 src={bookmark.favicon}
@@ -234,7 +235,7 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({
                 id={`fallback-icon-${bookmark.id}`}
                 name={getCategoryIcon(bookmark.category)} 
                 size="xl" 
-                className="text-gray-500 dark:text-gray-400 mb-3" 
+                className="text-primary-500 dark:text-primary-400 mb-3" 
               />
             )}
             <span className="text-base text-gray-600 dark:text-gray-300 text-center font-medium">
@@ -248,49 +249,67 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({
       <div className="p-5">
         <div className="flex items-start justify-between">
           {/* Title and URL */}
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-2 mb-1.5 group-hover:text-primary-500 dark:group-hover:text-primary-400 transition-colors duration-300">
+          <div className="flex-1 mr-4">
+            <h3 className="text-h3 font-medium text-gray-900 dark:text-white mb-1.5 line-clamp-2 group-hover:text-primary-500 dark:group-hover:text-primary-400 transition-colors">
               {bookmark.title}
             </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">
+              {bookmark.notes || `Bookmark from ${getDomain(bookmark.url)}`}
+            </p>
+            
+            {/* Tags */}
+            {bookmark.tags && bookmark.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {bookmark.tags.slice(0, 3).map((tag, index) => (
+                  <span 
+                    key={index} 
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                  >
+                    {tag}
+                  </span>
+                ))}
+                {bookmark.tags.length > 3 && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400 px-1.5 py-0.5">
+                    +{bookmark.tags.length - 3} more
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
         
-        {/* Tags */}
-        {bookmark.tags && bookmark.tags.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {bookmark.tags.slice(0, 3).map((tag, index) => (
-              <span 
-                key={index}
-                className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
-              >
-                #{tag}
-              </span>
-            ))}
-            {bookmark.tags.length > 3 && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                +{bookmark.tags.length - 3}
-              </span>
-            )}
+        {/* Footer with metadata and actions */}
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+          {/* Metadata */}
+          <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+            <Icon name="clock" size="sm" className="mr-1" />
+            <span>{getTimeSince(bookmark.createdAt)}</span>
           </div>
-        )}
-        
-        {/* Footer: Metadata and Action Buttons */}
-        <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
-          <span className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-            <Icon name="clock" size="sm" className="mr-1.5" />
-            {bookmark.createdAt && getTimeSince(bookmark.createdAt)}
-          </span>
           
           {/* Action Buttons */}
-          <div className="bookmark-actions flex space-x-3">
+          <div 
+            className={`
+              bookmark-actions flex items-center space-x-1.5 
+              ${isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'} 
+              transition-all duration-200
+            `}
+          >
             <ActionButton 
               onClick={handleFavorite} 
               icon="star" 
-              tooltip="Favorite" 
+              tooltip="Toggle Favorite"
               isActive={isFavorite}
             />
-            <ActionButton onClick={handleEdit} icon="edit" tooltip="Edit" />
-            <ActionButton onClick={handleDelete} icon="delete" tooltip="Delete" />
+            <ActionButton 
+              onClick={handleEdit} 
+              icon="edit" 
+              tooltip="Edit Bookmark"
+            />
+            <ActionButton 
+              onClick={handleDelete} 
+              icon="trash" 
+              tooltip="Delete Bookmark"
+            />
           </div>
         </div>
       </div>
@@ -310,15 +329,16 @@ const ActionButton: React.FC<ActionButtonProps> = ({ onClick, icon, tooltip, isA
     <button
       onClick={onClick}
       className={`
-        w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 
-        transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+        p-2 rounded-full 
         ${isActive 
-          ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-300' 
-          : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}
+          ? 'bg-primary-500 text-white' 
+          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-primary-100 dark:hover:bg-primary-900/40 hover:text-primary-500 dark:hover:text-primary-400'
+        }
+        transition-all duration-200
       `}
       title={tooltip}
     >
-      <Icon name={icon as any} size="md" />
+      <Icon name={icon as any} size="sm" />
     </button>
   );
 };

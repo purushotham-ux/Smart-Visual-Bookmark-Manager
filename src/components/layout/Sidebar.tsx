@@ -138,11 +138,12 @@ const Sidebar: React.FC<SidebarProps> = ({
     <aside 
       className={`
         ${isCollapsed ? 'hidden' : 'w-72'} 
-        h-full fixed left-0 top-20 bottom-0 bg-white dark:bg-gray-800 
+        h-full fixed left-0 top-20 bottom-0 
+        bg-gradient-to-b from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 
         border-r border-gray-200 dark:border-gray-700 
         transition-all duration-300 ease-in-out
         z-20 flex flex-col
-        shadow-md
+        shadow-md backdrop-blur-sm
       `}
     >
       {/* Main Navigation with Scrolling */}
@@ -197,7 +198,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               {!isCollapsed && !isAddingCollection && !isEditingCollection && (
                 <button
                   onClick={handleAddCollection}
-                  className="p-1.5 rounded-full text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700"
+                  className="p-1.5 rounded-full text-gray-600 hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700"
                   title="Add Collection"
                 >
                   <Icon name="plus" size="sm" />
@@ -208,13 +209,13 @@ const Sidebar: React.FC<SidebarProps> = ({
             {expandedSections.collections && !isCollapsed && (
               <div className="mt-3 space-y-2 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                 {(isAddingCollection || isEditingCollection) && (
-                  <div className="p-3 rounded-md bg-white dark:bg-gray-700 space-y-3 border border-gray-200 dark:border-gray-600 shadow-sm">
+                  <div className="p-3 rounded-lg bg-white dark:bg-gray-700 space-y-3 border border-gray-200 dark:border-gray-600 shadow-sm">
                     <input
                       type="text"
                       value={newCollectionName}
                       onChange={(e) => setNewCollectionName(e.target.value)}
                       placeholder="Collection name"
-                      className="w-full py-2 px-3 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-800 dark:text-white"
+                      className="w-full py-2 px-3 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-800 dark:text-white"
                       autoFocus
                     />
                     
@@ -224,7 +225,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                           key={option.icon}
                           type="button"
                           onClick={() => setCategoryIcon(option.icon)}
-                          className={`p-2 rounded-md flex items-center justify-center ${
+                          className={`p-2 rounded-lg flex items-center justify-center ${
                             categoryIcon === option.icon
                               ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400 ring-1 ring-primary-400'
                               : 'bg-white dark:bg-gray-600 text-gray-700 dark:text-gray-300'
@@ -239,20 +240,20 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <div className="flex justify-end space-x-2 mt-2">
                       <button
                         onClick={handleCancelAddCollection}
-                        className="px-3 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                        className="px-3 py-1.5 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleSaveCollection}
                         disabled={!newCollectionName.trim()}
-                        className={`px-3 py-1.5 rounded text-sm ${
+                        className={`px-3 py-1.5 rounded-lg text-sm ${
                           newCollectionName.trim() 
-                            ? 'bg-primary-500 hover:bg-primary-600 text-white' 
-                            : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                            ? 'bg-gradient-primary text-white hover:shadow-blue-glow'
+                            : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                         }`}
                       >
-                        {isEditingCollection ? 'Update' : 'Add Collection'}
+                        {isEditingCollection ? 'Update' : 'Create'}
                       </button>
                     </div>
                   </div>
@@ -440,28 +441,23 @@ const NavItem: React.FC<NavItemProps> = ({
   className = '',
 }) => {
   return (
-    <div
-      className={`
-        flex items-center py-2.5 px-3 rounded-md cursor-pointer 
-        ${isActive 
-          ? 'bg-primary-500 text-white shadow-sm' 
-          : 'text-gray-800 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 hover:shadow-sm'
-        }
-        ${indented ? 'ml-2' : ''}
-        ${className}
-        transition-all duration-200
-      `}
+    <button
       onClick={onClick}
+      className={`
+        w-full flex items-center space-x-3 py-2.5 px-3
+        transition-all duration-200
+        rounded-lg
+        ${isActive 
+          ? 'bg-gradient-primary text-white shadow-sm hover:shadow-blue-glow' 
+          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'}
+        ${indented ? 'pl-7' : ''}
+        ${className}
+        ${isCollapsed ? 'justify-center' : ''}
+      `}
     >
-      {icon && (
-        <div className="flex-shrink-0 w-5 h-5 mr-3">
-          <Icon name={icon as any} size="sm" />
-        </div>
-      )}
-      {!isCollapsed && (
-        <span className="flex-grow truncate font-medium">{label}</span>
-      )}
-    </div>
+      {icon && <Icon name={icon as any} size={isCollapsed ? 'lg' : 'sm'} className={isActive ? 'text-white' : ''} />}
+      {!isCollapsed && <span className="text-sm font-medium truncate">{label}</span>}
+    </button>
   );
 };
 
@@ -516,15 +512,14 @@ const TagPill: React.FC<TagPillProps> = ({
     <button
       onClick={onClick}
       className={`
-        py-1.5 px-3 rounded-full text-sm font-medium
+        inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium
         transition-all duration-200
         ${isSelected 
-          ? 'bg-primary-500 text-white'
-          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-        }
+          ? 'bg-gradient-secondary text-white shadow-sm hover:shadow-teal-glow'
+          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}
       `}
     >
-      {label}
+      <span className="truncate max-w-[160px]">{label}</span>
     </button>
   );
 };

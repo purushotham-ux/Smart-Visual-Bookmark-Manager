@@ -239,7 +239,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   }
 
   return (
-    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white ${isDarkMode ? 'dark' : ''}`}>
+    <div className={`min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white ${isDarkMode ? 'dark' : ''}`}>
       {/* Top Application Bar */}
       <TopBar
         user={user}
@@ -273,7 +273,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         >
           <div className="p-4 md:p-8">
             {/* Page Header */}
-            <div className="mb-6 bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:shadow-md">
+            <div className="mb-6 bg-white dark:bg-gray-800 bg-opacity-90 dark:bg-opacity-60 backdrop-blur-sm p-4 md:p-6 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:shadow-lg">
               <div className="flex flex-col md:flex-row md:justify-between md:items-center">
                 <div>
                   <h1 className="text-h1 font-semibold text-gray-900 dark:text-white">
@@ -292,10 +292,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                   </p>
                 </div>
                 <Button
-                  variant="secondary"
+                  variant="primary"
                   onClick={() => setIsAddModalOpen(true)}
                   leftIcon={<Icon name="plus" />}
-                  className="hidden md:flex mt-4 md:mt-0 transform transition-transform duration-200 hover:scale-105"
+                  className="hidden md:flex mt-4 md:mt-0 transform transition-transform duration-200 hover:scale-105 bg-gradient-primary hover:shadow-blue-glow"
                 >
                   Add Bookmark
                 </Button>
@@ -312,7 +312,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search bookmarks..."
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors duration-200"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
                 />
                 {searchQuery && (
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -351,9 +351,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             {/* Mobile Add Button - Fixed at the bottom for easy access on mobile */}
             <div className="md:hidden fixed bottom-6 right-6 z-20">
               <Button
-                variant="secondary"
+                variant="primary"
                 onClick={() => setIsAddModalOpen(true)}
-                className="rounded-full w-14 h-14 flex items-center justify-center shadow-lg transform transition-transform duration-200 hover:scale-110 active:scale-95"
+                className="rounded-full w-14 h-14 flex items-center justify-center shadow-lg transform transition-transform duration-200 hover:scale-110 active:scale-95 bg-gradient-primary hover:shadow-blue-glow"
                 aria-label="Add bookmark"
               >
                 <Icon name="plus" size="lg" />

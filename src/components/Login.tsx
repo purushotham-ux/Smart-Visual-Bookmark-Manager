@@ -131,13 +131,13 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 font-sans login-container">
       {/* Background with gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900/70 to-slate-900 dark:from-gray-950 dark:via-blue-950/80 dark:to-gray-950"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-primary-900/70 to-gray-900 dark:from-gray-950 dark:via-primary-950/80 dark:to-gray-950"></div>
       
       {/* Animated background dots/circles effect */}
       <div className="absolute inset-0 overflow-hidden opacity-20">
-        <div className="absolute top-[10%] left-[15%] w-[35rem] h-[35rem] bg-blue-500 rounded-full mix-blend-multiply filter blur-[80px] animate-blob"></div>
-        <div className="absolute top-[40%] right-[15%] w-[30rem] h-[30rem] bg-indigo-500 rounded-full mix-blend-multiply filter blur-[80px] animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-[10%] left-[35%] w-[30rem] h-[30rem] bg-violet-500 rounded-full mix-blend-multiply filter blur-[80px] animate-blob animation-delay-4000"></div>
+        <div className="absolute top-[10%] left-[15%] w-[35rem] h-[35rem] bg-accent-blue rounded-full mix-blend-multiply filter blur-[80px] animate-blob"></div>
+        <div className="absolute top-[40%] right-[15%] w-[30rem] h-[30rem] bg-accent-purple rounded-full mix-blend-multiply filter blur-[80px] animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-[10%] left-[35%] w-[30rem] h-[30rem] bg-accent-teal rounded-full mix-blend-multiply filter blur-[80px] animate-blob animation-delay-4000"></div>
       </div>
       
       {/* Particles/stars background effect */}
@@ -146,16 +146,16 @@ const Login: React.FC = () => {
       {/* Theme Toggle */}
         <button
           onClick={toggleDarkMode}
-        className="absolute top-4 right-4 z-10 p-2 rounded-full text-gray-400 hover:text-white bg-slate-800/50 backdrop-blur-sm hover:bg-slate-700/70 transition-all duration-300 shadow-lg focus:outline-none"
+        className="absolute top-4 right-4 z-10 p-2.5 rounded-full text-gray-400 hover:text-white bg-gray-800/60 backdrop-blur-sm hover:bg-gray-700/70 transition-all duration-300 shadow-lg focus:outline-none"
           aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
         >
-        <Icon name={isDarkMode ? "sun" : "moon"} size="md" />
+        <Icon name={isDarkMode ? "sun" : "moon"} size="md" className={isDarkMode ? "text-amber-400" : "text-primary-500"} />
       </button>
       
       <div className="relative z-10 w-full max-w-screen-xl mx-auto">
         <div className="w-full md:w-1/2 max-w-md mx-auto animate-fade-in-up">
           <div 
-            className={`bg-slate-900/60 backdrop-blur-md rounded-xl shadow-2xl overflow-hidden transition-all duration-300 transform ${isAnimating ? 'scale-95 opacity-90' : 'scale-100 opacity-100'} glow-effect`}
+            className={`bg-white/5 dark:bg-gray-900/40 backdrop-blur-md rounded-xl shadow-2xl overflow-hidden transition-all duration-300 transform ${isAnimating ? 'scale-95 opacity-90' : 'scale-100 opacity-100'} border border-white/10`}
           >
             {/* Decorative SVG Background */}
             <div className="login-svg-bg">
@@ -171,24 +171,38 @@ const Login: React.FC = () => {
                 {/* Logo SVG */}
                 <div className="flex justify-center mb-6">
                   <div className="relative">
-                    <div className="bg-gradient-to-r from-primary-600 to-primary-500 w-24 h-24 rounded-xl flex items-center justify-center shadow-lg transform transition-transform hover:rotate-6">
+                    <div className="bg-gradient-primary w-24 h-24 rounded-xl flex items-center justify-center shadow-blue-glow transform transition-transform hover:rotate-6">
                       <svg className="w-14 h-14 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M17 4H7C5.9 4 5.01 4.9 5.01 6L5 20L12 17L19 20V6C19 4.9 18.1 4 17 4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     </div>
                   </div>
-                  <div className= "px-2  " >
-                    <h1 className="font-bold mb-2 text-center text-white">Bookmark Hub</h1>
+                  <div className="px-2">
+                    <h1 className="text-xl font-bold mb-2 text-center text-gradient-primary">Bookmark Hub</h1>
                   </div>
                 </div>
 
-                <h2 className="text-2xl font-bold mb-2 text-center gradient-text">
+                <h2 className="text-2xl font-bold mb-2 text-center text-gradient-secondary">
                   {isLoginMode ? 'Welcome back' : 'Create account'}
                 </h2>
-                <p className="text-slate-400 text-sm text-center">
+                <p className="text-gray-400 text-sm text-center">
                   {isLoginMode ? 'Sign in to continue to your bookmarks' : 'Start organizing your online world'}
           </p>
         </div>
+              
+              {/* Show reset password success message inside the form container */}
+              {resetSent && (
+                <div className="mx-8 my-4 bg-green-900/40 border border-green-800/50 rounded-lg px-4 py-3">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <Icon name="star" className="h-5 w-5 text-green-400" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-green-300">Password reset email sent! Please check your inbox.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
         
         {error && (
                 <div className="mx-8 my-4 bg-red-900/40 border border-red-800/50 rounded-lg px-4 py-3 animate-pulse">
@@ -206,10 +220,10 @@ const Login: React.FC = () => {
               <form onSubmit={handleEmailPasswordAuth} className="px-8 pt-6 pb-8">
                 {!isLoginMode && (
                   <div className="mb-6 group">
-                    <label htmlFor="name" className="block text-sm font-medium text-slate-300 mb-2">Name</label>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">Name</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg className="h-5 w-5 text-slate-400 group-hover:text-primary-400 transition-colors duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg className="h-5 w-5 text-gray-400 group-hover:text-primary-400 transition-colors duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                           <circle cx="12" cy="7" r="4"></circle>
                         </svg>
@@ -221,31 +235,18 @@ const Login: React.FC = () => {
                         required={!isLoginMode}
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
-                        className="bg-slate-800/50 border border-slate-700 text-white block w-full pl-10 pr-3 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-slate-600"
+                        className="bg-gray-800/50 border border-gray-700 text-white block w-full pl-10 pr-3 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-600"
                         placeholder="Your name"
                       />
                     </div>
-                  </div>
-                )}
-                
-                {resetSent && (
-                  <div className="mb-4 bg-green-900/40 border border-green-800/50 rounded-lg px-4 py-3">
-                    <div className="flex">
-                      <div className="flex-shrink-0">
-                        <Icon name="star" className="h-5 w-5 text-green-400" />
-                      </div>
-                      <div className="ml-3">
-                        <p className="text-sm text-green-300">Password reset email sent! Please check your inbox.</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+          </div>
+        )}
         
                 <div className="mb-6 group">
-                  <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">Email</label>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">Email</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-slate-400 group-hover:text-primary-400 transition-colors duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg className="h-5 w-5 text-gray-400 group-hover:text-primary-400 transition-colors duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                         <polyline points="22,6 12,13 2,6"></polyline>
                       </svg>
@@ -257,49 +258,31 @@ const Login: React.FC = () => {
                       required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-                      className="bg-slate-800/50 border border-slate-700 text-white block w-full pl-10 pr-3 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-slate-600"
-                      placeholder="you@example.com"
+                      className="bg-gray-800/50 border border-gray-700 text-white block w-full pl-10 pr-3 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-600"
+                      placeholder="Your email"
             />
                   </div>
           </div>
           
-                <div className="mb-4 group">
-                  <div className="flex items-center justify-between mb-2">
-                    <label htmlFor="password" className="block text-sm font-medium text-slate-300">Password</label>
+                <div className="mb-6 group">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">Password</label>
                     {isLoginMode && (
                       <button
                         type="button"
                         onClick={handleForgotPassword}
-                        className="text-sm text-primary-400 hover:text-primary-300 focus:outline-none focus:underline transition-colors duration-200">
+                        className="text-sm text-primary-400 hover:text-primary-300 focus:outline-none focus:underline transition-colors duration-200"
+                      >
                         Forgot password?
                       </button>
                     )}
                   </div>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-slate-400 group-hover:text-primary-400 transition-colors duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg className="h-5 w-5 text-gray-400 group-hover:text-primary-400 transition-colors duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                       </svg>
-                    </div>
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="text-slate-400 hover:text-white focus:outline-none"
-                      >
-                        {showPassword ? (
-                          <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                            <line x1="1" y1="1" x2="23" y2="23"></line>
-                          </svg>
-                        ) : (
-                          <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                          </svg>
-                        )}
-                      </button>
                     </div>
             <input
               id="password"
@@ -308,30 +291,26 @@ const Login: React.FC = () => {
                       required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-                      className="bg-slate-800/50 border border-slate-700 text-white block w-full pl-10 pr-10 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-slate-600"
-              placeholder="••••••••"
+                      className="bg-gray-800/50 border border-gray-700 text-white block w-full pl-10 pr-10 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-gray-600"
+                      placeholder="Your password"
                     />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      <button
+                        type="button"
+                        className="text-gray-400 hover:text-gray-300 focus:outline-none focus:text-gray-300"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        <Icon name={showPassword ? "star" : "close"} size="sm" />
+                      </button>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="flex items-center mb-6">
-                  <div className="relative">
-                    <input
-                      id="remember"
-                      name="remember"
-                      type="checkbox"
-                      className="h-4 w-4 text-primary-600 border-slate-600 rounded focus:ring-primary-500 bg-slate-700"
-                    />
-                    <div className="hover-glow"></div>
-                  </div>
-                  <label htmlFor="remember" className="ml-2 block text-sm text-slate-400 hover:text-slate-300 transition-colors duration-200">
-                    Remember me
-                  </label>
-          </div>
-
+                <div className="flex items-center justify-between mt-8 mb-2">
             <button
               type="submit"
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 rounded-lg text-white font-medium shadow-lg shadow-primary-900/20 transform transition-all duration-200 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+                    disabled={isLoading}
+                    className={`w-full bg-gradient-primary text-white py-2.5 px-4 rounded-lg font-medium transition-all duration-300 hover:shadow-blue-glow transform hover:translate-y-[-2px] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
                   {isLoading ? (
                     <div className="flex items-center justify-center">
@@ -341,56 +320,62 @@ const Login: React.FC = () => {
                 </svg>
                       <span>Processing...</span>
                     </div>
-                  ) : isLoginMode ? "Sign in" : "Create account"}
+                    ) : (
+                      <>{isLoginMode ? 'Sign in' : 'Create account'}</>
+                    )}
+                  </button>
+                </div>
+                
+                <div className="text-center mt-6">
+                  <p className="text-sm text-gray-400">
+                    {isLoginMode ? "Don't have an account? " : "Already have an account? "}
+                    <button
+                      type="button"
+                      onClick={toggleMode}
+                      className="font-medium text-primary-400 hover:text-primary-300 focus:outline-none focus:underline transition-colors duration-200"
+                    >
+                      {isLoginMode ? 'Sign up' : 'Sign in'}
             </button>
+                  </p>
+                </div>
         </form>
 
               <div className="px-8 pb-8">
-        <div className="relative my-6">
+                <div className="relative">
           <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-slate-700"></div>
+                    <div className="w-full border-t border-gray-700"></div>
           </div>
-          <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-slate-900/60 text-slate-400">Or continue with</span>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="px-2 bg-gray-900 text-gray-400">Or continue with</span>
           </div>
         </div>
         
-                <div className="grid grid-cols-2 gap-4">
+                <div className="mt-6 grid grid-cols-2 gap-4">
           <button
                     type="button"
-                    onClick={() => handleSocialLogin('google')}
-                    className="flex items-center justify-center py-2.5 px-4 border border-slate-700 rounded-lg bg-slate-800/50 text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-400 transition-all duration-200 hover:translate-y-[-2px] group"
+                    onClick={handleGoogleSignIn}
+                    className="w-full inline-flex justify-center py-2.5 px-4 rounded-lg bg-white/10 hover:bg-white/20 border border-gray-700 shadow-sm text-sm font-medium text-white transition-all duration-200"
                   >
-                    <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" fill="#FFF"/>
+                    <svg className="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                      <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/>
+                      <path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078-3.12 0-5.776-2.107-6.718-4.928L1.214 17.28A11.988 11.988 0 0 0 12 24c2.947 0 5.705-1.031 7.734-2.975l-3.694-3.012Z"/>
+                      <path fill="#4285F4" d="M19.734 21.025C21.92 18.907 23.4 15.62 23.4 12c0-.96-.093-1.892-.263-2.8H12v5.6h6.458a5.445 5.445 0 0 1-2.386 3.513l3.662 2.712Z"/>
+                      <path fill="#FBBC05" d="M5.242 14.163a7.18 7.18 0 0 1 0-4.326L1.216 6.722a12.01 12.01 0 0 0 0 10.556l4.026-3.115Z"/>
             </svg>
-                    <span className="group-hover:font-medium transition-all">Google</span>
+                    Google
           </button>
           
           <button
                     type="button"
-                    onClick={() => handleSocialLogin('github')}
-                    className="flex items-center justify-center py-2.5 px-4 border border-slate-700 rounded-lg bg-slate-800/50 text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-400 transition-all duration-200 hover:translate-y-[-2px] group"
+                    onClick={handleGithubSignIn}
+                    className="w-full inline-flex justify-center py-2.5 px-4 rounded-lg bg-white/10 hover:bg-white/20 border border-gray-700 shadow-sm text-sm font-medium text-white transition-all duration-200"
                   >
-                    <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="#FFF"/>
+                    <svg className="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+                      <path fillRule="evenodd" clipRule="evenodd" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
             </svg>
-                    <span className="group-hover:font-medium transition-all">GitHub</span>
+                    GitHub
           </button>
                 </div>
-        </div>
-        
-              <div className="px-8 py-6 bg-gradient-to-r from-slate-900/90 to-slate-800/90 border-t border-slate-800 text-center">
-                <p className="text-sm text-slate-400">
-                  {isLoginMode ? "Don't have an account?" : "Already have an account?"}
-          <button 
-                    type="button"
-                    onClick={toggleMode}
-                    className="ml-2 text-primary-400 hover:text-primary-300 focus:outline-none focus:underline transition-colors duration-200 font-medium"
-          >
-                    {isLoginMode ? "Sign up" : "Sign in"}
-          </button>
-                </p>
               </div>
             </div>
         </div>

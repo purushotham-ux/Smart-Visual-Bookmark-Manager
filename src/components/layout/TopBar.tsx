@@ -89,13 +89,13 @@ const TopBar: React.FC<TopBarProps> = ({
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-20 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-30 shadow-md">
+    <header className="fixed top-0 left-0 right-0 h-20 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 z-30 shadow-md">
       <div className="h-full flex items-center justify-between px-6">
         {/* Left Section - Logo and Menu */}
         <div className="flex items-center space-x-4">
           <button
             onClick={onMenuToggle}
-            className="p-2.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors duration-200"
+            className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 transition-colors duration-200"
             aria-expanded={isMenuOpen}
             aria-label="Toggle menu"
           >
@@ -103,7 +103,7 @@ const TopBar: React.FC<TopBarProps> = ({
           </button>
 
           <div className="hidden sm:block">
-            <h1 className="text-xl font-semibold text-primary-600 dark:text-primary-400">
+            <h1 className="text-xl font-semibold text-gradient-primary">
               VisualMarks
             </h1>
           </div>
@@ -114,7 +114,7 @@ const TopBar: React.FC<TopBarProps> = ({
           ref={searchRef}
           className={`
             w-full max-w-xl mx-6 hidden md:block 
-            ${searchFocused ? 'ring-2 ring-primary-500 dark:ring-primary-400 rounded-md' : ''}
+            ${searchFocused ? 'ring-2 ring-primary-500 dark:ring-primary-400 rounded-lg' : ''}
           `}
         >
           <div className="relative">
@@ -138,7 +138,7 @@ const TopBar: React.FC<TopBarProps> = ({
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
               placeholder="Search bookmarks (Ctrl+K)..."
-              className="block w-full pl-11 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-primary-500 dark:focus:border-primary-400 transition-colors duration-200"
+              className="block w-full pl-11 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-primary-500 dark:focus:border-primary-400 transition-colors duration-200"
             />
             {actualSearchQuery && (
               <div className="absolute inset-y-0 right-1 px-2 pr-3.5 flex items-center">
@@ -159,7 +159,7 @@ const TopBar: React.FC<TopBarProps> = ({
         {/* Right Section - View Controls and User */}
         <div className="flex items-center justify-end space-x-4">
           {/* View Controls */}
-          <div className="hidden sm:flex bg-gray-100 dark:bg-gray-700 rounded-md">
+          <div className="hidden sm:flex bg-gray-100/80 dark:bg-gray-700/80 backdrop-blur-sm rounded-lg">
             <ViewButton
               view="grid"
               label="Grid"
@@ -177,17 +177,17 @@ const TopBar: React.FC<TopBarProps> = ({
           {/* Theme Toggle */}
           <button
             onClick={toggleDarkMode}
-            className="p-2.5 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors duration-200"
+            className="p-2.5 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 transition-colors duration-200"
             aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
           >
-            <Icon name={isDarkMode ? "sun" : "moon"} size="md" />
+            <Icon name={isDarkMode ? "sun" : "moon"} size="md" className={isDarkMode ? "text-amber-400" : "text-primary-500"} />
           </button>
 
           {/* User Menu */}
           <div ref={userMenuRef} className="relative py-5">
             <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+              className="flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded-full"
               aria-expanded={isUserMenuOpen}
             >
               <span className="hidden md:block mr-2 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -196,13 +196,13 @@ const TopBar: React.FC<TopBarProps> = ({
               <img
                 src={user.photoURL || 'https://via.placeholder.com/40'}
                 alt={user.displayName || 'User'}
-                className="h-10 w-10 rounded-full object-cover border-2 border-primary-500 transition-transform duration-200 hover:scale-110"
+                className="h-10 w-10 rounded-full object-cover border-2 border-primary-500 shadow-sm transition-transform duration-200 hover:scale-110"
               />
             </button>
 
             {/* User Dropdown Menu */}
             {isUserMenuOpen && (
-              <div className="absolute left-1/2 bottom-0 translate-x-[-50%] translate-y-full rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none px-2.5 divide-y divide-gray-200 dark:divide-gray-700">
+              <div className="absolute left-1/2 bottom-0 translate-x-[-50%] translate-y-full rounded-lg shadow-lg py-1 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm ring-1 ring-black ring-opacity-5 focus:outline-none px-2.5 divide-y divide-gray-200 dark:divide-gray-700">
                 <div className="px-4 py-3">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
                     {user.displayName || 'User'}
@@ -258,9 +258,9 @@ const ViewButton: React.FC<ViewButtonProps> = ({ view, label, activeView, onChan
   return (
     <button
       onClick={() => onChange(view)}
-      className={`flex items-center px-3 py-2 rounded-md transition-all duration-200 ${
+      className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
         isActive
-          ? 'bg-white dark:bg-gray-600 shadow-sm text-primary-600 dark:text-primary-400'
+          ? 'bg-white dark:bg-gray-600 shadow-sm text-primary-500 dark:text-primary-400'
           : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
       }`}
       aria-label={`${label} View`}
