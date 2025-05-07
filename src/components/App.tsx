@@ -4,11 +4,14 @@ import Login from './Login';
 import { useAuth } from '../contexts/AuthContext';
 import { ThemeProvider } from '../hooks/useTheme.js';
 import Icon from './ui/Icon';
+import { User } from '../types/User';
+import { NotificationProvider } from '../contexts/NotificationContext';
 
 const App: React.FC = () => {
   const { currentUser, loading } = useAuth();
   const [initialLoading, setInitialLoading] = useState<boolean>(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     // Add a small delay to avoid flash of login screen if user is already logged in
@@ -26,6 +29,18 @@ const App: React.FC = () => {
       } catch (error) {
         console.error('Error checking local storage:', error);
       }
+    }
+
+    if (currentUser) {
+      const { uid, email, displayName, photoURL } = currentUser;
+      setUser({
+        uid,
+        email: email || '',
+        displayName: displayName || '',
+        photoURL: photoURL || '',
+      });
+    } else {
+      setUser(null);
     }
 
     return () => clearTimeout(timer);
@@ -93,11 +108,13 @@ const App: React.FC = () => {
 
   return (
     <ThemeProvider>
-      {currentUser ? (
-        <Dashboard user={currentUser} />
-      ) : (
-        <Login />
-      )}
+      <NotificationProvider>
+        {user ? (
+          <Dashboard user={user} />
+        ) : (
+          <Login />
+        )}
+      </NotificationProvider>
     </ThemeProvider>
   );
 };

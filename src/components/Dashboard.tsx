@@ -12,6 +12,7 @@ import { useTheme } from '../hooks/useTheme.js';
 import Icon from './ui/Icon';
 import Button from './ui/Button';
 import { getSampleBookmarks, generateSampleBookmark } from '../services/sampleData';
+import { useNotification } from '../contexts/NotificationContext';
 
 interface DashboardProps {
   user: User;
@@ -22,6 +23,9 @@ type ViewType = 'grid' | 'list';
 
 const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   console.log(`Dashboard mounted for user: ${user.uid}`);
+  
+  // Use notification system
+  const { showNotification } = useNotification();
   
   // UI State
   const [showSidebar, setShowSidebar] = useState<boolean>(true);
@@ -80,6 +84,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       
       await addBookmark(bookmark);
       console.log('Dashboard: Bookmark added successfully');
+      showNotification('success', 'Bookmark added successfully!');
       setIsAddModalOpen(false);
     } catch (error) {
       console.error(`Dashboard: Error adding bookmark for user ${user.uid}:`, error);
@@ -89,7 +94,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         errorMessage = `Failed to add bookmark: ${error.message}`;
       }
       
-      alert(errorMessage);
+      showNotification('error', errorMessage);
     }
   };
 
@@ -97,6 +102,30 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const handleEditBookmark = (bookmark: Bookmark) => {
     setEditBookmark(bookmark);
     setIsAddModalOpen(true);
+  };
+
+  // Handle successful bookmark update
+  const handleUpdateBookmark = async (bookmarkId: string, updates: Partial<Bookmark>) => {
+    try {
+      await updateBookmark(bookmarkId, updates);
+      showNotification('success', 'Bookmark updated successfully!');
+      setEditBookmark(null);
+      setIsAddModalOpen(false);
+    } catch (error) {
+      console.error('Error updating bookmark:', error);
+      showNotification('error', 'Failed to update bookmark. Please try again.');
+    }
+  };
+
+  // Handle bookmark deletion with notification
+  const handleDeleteBookmark = async (id: string) => {
+    try {
+      await deleteBookmark(id);
+      showNotification('success', 'Bookmark deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting bookmark:', error);
+      showNotification('error', 'Failed to delete bookmark. Please try again.');
+    }
   };
 
   // Function to add sample data
@@ -113,9 +142,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       }
       
       console.log('Added sample bookmarks successfully');
+      showNotification('success', 'Sample bookmarks added successfully!');
     } catch (error) {
       console.error('Failed to add sample bookmarks:', error);
-      alert('Failed to add sample bookmarks. Please try again.');
+      showNotification('error', 'Failed to add sample bookmarks. Please try again.');
     } finally {
       setIsLoadingSamples(false);
     }
@@ -339,10 +369,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                   <BookmarkCard
                     key={bookmark.id}
                     bookmark={bookmark}
-                    onDelete={deleteBookmark}
+                    onDelete={handleDeleteBookmark}
                     onClick={handleBookmarkClick}
-                    aspectRatio={activeView === 'list' ? '4:3' : '16:9'}
+                    aspectRatio={activeView === 'list' ? 'list' : '16:9'}
                     onEdit={handleEditBookmark}
+                    onFavorite={(id, isFavorite) => updateBookmark(id, { isFavorite })}
+                    isFeatured={bookmark.isFavorite && selectedCategory !== 'favorites'}
                   />
                 ))}
               </div>
@@ -370,7 +402,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             setIsAddModalOpen(false);
             setEditBookmark(null);
           }}
-          onAdd={handleAddBookmark}
+          onAdd={editBookmark ? 
+            (bookmarkData) => handleUpdateBookmark(editBookmark.id, bookmarkData) : 
+            handleAddBookmark
+          }
           userId={user.uid}
           editBookmark={editBookmark || undefined}
           currentCategory={selectedCategory !== 'all' && 

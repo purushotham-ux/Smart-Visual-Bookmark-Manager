@@ -7,10 +7,11 @@ import Icon from './ui/Icon';
 
 interface AddBookmarkModalProps {
   onClose: () => void;
-  onAdd: (bookmark: Omit<Bookmark, 'id' | 'createdAt' | 'updatedAt' | 'position' | 'clickCount'>) => void;
+  onAdd: (bookmark: Omit<Bookmark, 'id' | 'createdAt' | 'updatedAt' | 'position' | 'clickCount'>) => Promise<void>;
   userId: string;
   editBookmark?: Bookmark; // Optional prop for editing existing bookmark
   currentCategory?: string; // Add this prop to pass the currently selected category
+  onSuccess?: (message: string) => void; // New prop for success callback
 }
 
 const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
@@ -18,7 +19,8 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
   onAdd,
   userId,
   editBookmark,
-  currentCategory
+  currentCategory,
+  onSuccess
 }) => {
   // Get categories and tags from hooks
   const { categories } = useCategories(userId);
@@ -34,6 +36,7 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
   const [imageUrl, setImageUrl] = useState<string>(editBookmark?.imageUrl || '');
   const [favicon, setFavicon] = useState<string>(editBookmark?.favicon || '');
   const [useCustomImage, setUseCustomImage] = useState<boolean>(false);
+  const [isFavorite, setIsFavorite] = useState<boolean>(editBookmark?.isFavorite || false);
   
   // UI state
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -300,15 +303,22 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
         tags,
         imageUrl,
         favicon,
-        isFavorite: false // Set default value for favorite status
+        isFavorite: editBookmark ? isFavorite : false // Preserve favorite status when editing
       };
       
       console.log('Submitting bookmark with data:', bookmarkData);
       await onAdd(bookmarkData);
+      
+      // Show success message and close modal
+      if (onSuccess) {
+        onSuccess(editBookmark ? 'Bookmark updated successfully!' : 'Bookmark added successfully!');
+      }
+      handleClose();
     } catch (error) {
       console.error('Error saving bookmark:', error);
       setError('Failed to save bookmark. Please try again.');
-      setIsLoading(false);
+    } finally {
+      setIsLoading(false); // Always reset loading state
     }
   };
   
