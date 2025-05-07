@@ -26,44 +26,89 @@ const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ user, onClo
   const [profileMessage, setProfileMessage] = useState('');
 
   // Regenerate avatar
-  const handleRegenerateAvatar = () => {
-    setImageFile(null);
-    const newAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random&timestamp=${Date.now()}`;
-    setPhotoURL(newAvatar);
+  const handleRegenerateAvatar = async () => {
+    setIsLoading(true);
+    setError('');
+    setImageMessage('');
+    
+    try {
+      if (!auth.currentUser) {
+        throw new Error('No user is signed in');
+      }
+
+      const newAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random&timestamp=${Date.now()}`;
+      
+      // Update user profile with new avatar URL
+      await updateProfile(auth.currentUser, { photoURL: newAvatar });
+      
+      // Refresh user data
+      await refreshUser();
+      
+      // Update local state
+      setPhotoURL(newAvatar);
+      setImageFile(null);
+      setImageMessage('Avatar regenerated successfully!');
+      
+      // Clear any previous errors
+      setError('');
+    } catch (err: any) {
+      console.error('Failed to regenerate avatar:', err);
+      setError('Failed to regenerate avatar: ' + (err.message || err.toString()));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Handle image file selection
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setImageFile(e.target.files[0]);
-      setPhotoURL(URL.createObjectURL(e.target.files[0]));
+      const file = e.target.files[0];
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size should be less than 5MB');
+        return;
+      }
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please upload an image file');
+        return;
+      }
+      setImageFile(file);
+      setPhotoURL(URL.createObjectURL(file));
+      setError('');
     }
   };
 
   // Save only the profile image
   const handleSaveProfileImage = async () => {
-    setIsLoading(true);
     setError('');
     setImageMessage('');
+    if (!imageFile) {
+      setError('Please select an image to upload');
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      let finalPhotoURL = photoURL;
-      if (imageFile && auth.currentUser) {
-        const imageRef = ref(storage, `profileImages/${auth.currentUser.uid}`);
-        console.log('Uploading image to Firebase Storage...', imageFile);
-        await uploadBytes(imageRef, imageFile);
-        finalPhotoURL = await getDownloadURL(imageRef);
-        console.log('Image uploaded. Download URL:', finalPhotoURL);
+      if (!auth.currentUser) {
+        setError('No user is signed in');
+        setIsLoading(false);
+        return;
       }
-      if (auth.currentUser) {
-        console.log('Updating user profile with photoURL:', finalPhotoURL);
-        await updateProfile(auth.currentUser, { photoURL: finalPhotoURL });
-        await refreshUser();
-        setPhotoURL(auth.currentUser.photoURL || finalPhotoURL);
-        setImageMessage('Profile image updated successfully!');
-        setImageFile(null);
-      } else {
-        setError('No user is signed in.');
-      }
+      console.log('Uploading image to Firebase Storage...');
+      const imageRef = ref(storage, `profileImages/${auth.currentUser.uid}`);
+      await uploadBytes(imageRef, imageFile);
+      console.log('Image uploaded. Getting download URL...');
+      const downloadURL = await getDownloadURL(imageRef);
+      console.log('Download URL:', downloadURL);
+      console.log('Updating user profile with new photoURL...');
+      await updateProfile(auth.currentUser, { photoURL: downloadURL });
+      console.log('Profile updated. Refreshing user...');
+      await refreshUser();
+      setPhotoURL(downloadURL);
+      setImageMessage('Profile image updated successfully!');
+      setImageFile(null);
+      console.log('Profile image update complete.');
     } catch (err: any) {
       console.error('Failed to update profile image:', err);
       setError('Failed to update profile image: ' + (err.message || err.toString()));
@@ -146,12 +191,19 @@ const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ user, onClo
           <button onClick={handleRegenerateAvatar} className="text-xs text-primary-500 hover:underline mb-2">Regenerate Avatar</button>
           <button
             onClick={handleSaveProfileImage}
-            className="w-full py-2 mb-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium"
+            className="w-full py-2 mb-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium flex items-center justify-center"
             disabled={isLoading}
           >
-            Save Profile Image
+            {isLoading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                Saving...
+              </>
+            ) : 'Save Profile Image'}
           </button>
-          {imageMessage && <div className="mt-2 text-green-600 text-center">{imageMessage}</div>}
+          {(imageMessage || error) && (
+            <div className={`mt-2 text-center ${imageMessage ? 'text-green-600' : 'text-red-600'}`}>{imageMessage || error}</div>
+          )}
         </div>
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">Display Name</label>

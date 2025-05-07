@@ -225,8 +225,21 @@ const Login: React.FC = () => {
                         placeholder="Your name"
                       />
                     </div>
-          </div>
-        )}
+                  </div>
+                )}
+                
+                {resetSent && (
+                  <div className="mb-4 bg-green-900/40 border border-green-800/50 rounded-lg px-4 py-3">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <Icon name="star" className="h-5 w-5 text-green-400" />
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm text-green-300">Password reset email sent! Please check your inbox.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
         
                 <div className="mb-6 group">
                   <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">Email</label>
@@ -383,18 +396,6 @@ const Login: React.FC = () => {
         </div>
         </div>
       </div>
-      {resetSent && (
-        <div className="mx-8 my-4 bg-green-900/40 border border-green-800/50 rounded-lg px-4 py-3">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <Icon name="star" className="h-5 w-5 text-green-400" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-green-300">Password reset email sent! Please check your inbox.</p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
