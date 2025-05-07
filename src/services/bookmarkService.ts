@@ -60,6 +60,14 @@ export const subscribeToBookmarks = (
             console.error("Error updating document ID:", err)
           );
         }
+        
+        // Log category information for debugging
+        if (data.category) {
+          console.log(`Bookmark ${doc.id} has category: ${data.category}`);
+        } else {
+          console.warn(`Bookmark ${doc.id} has no category assigned`);
+        }
+        
         return {
           id: doc.id,
           ...data
@@ -92,6 +100,8 @@ export const addBookmark = async (
     };
 
     console.log('Starting bookmark creation process for user:', userId);
+    console.log('Bookmark data:', JSON.stringify(sanitizedBookmark, null, 2));
+    
     const bookmarksCollection = collection(db, getUserBookmarksPath(userId));
     
     // Get the position for the new bookmark
@@ -102,6 +112,24 @@ export const addBookmark = async (
     
     // Create timestamp manually to ensure immediate local updates
     const now = Timestamp.now();
+    
+    // Log the category being used
+    if (sanitizedBookmark.category) {
+      console.log(`Adding bookmark to category: ${sanitizedBookmark.category}`);
+      
+      // Verify that the category exists
+      const categoriesCollection = collection(db, getUserCategoriesPath(userId));
+      const categoryDoc = doc(categoriesCollection, sanitizedBookmark.category);
+      const categorySnapshot = await getDocs(query(categoriesCollection, where('id', '==', sanitizedBookmark.category)));
+      
+      if (categorySnapshot.empty) {
+        console.warn(`Category ${sanitizedBookmark.category} not found. Creating a bookmark with potentially invalid category reference.`);
+      } else {
+        console.log(`Confirmed category ${sanitizedBookmark.category} exists.`);
+      }
+    } else {
+      console.warn('No category specified for this bookmark');
+    }
     
     const newBookmark = {
       ...sanitizedBookmark,
@@ -595,12 +623,14 @@ export const importBookmarks = async (
 export const searchBookmarks = async (userId: string, searchTerm: string): Promise<Bookmark[]> => {
   try {
     if (!searchTerm || searchTerm.trim() === '') {
-      // If no search term, return all bookmarks
+      console.log('Empty search term, returning all bookmarks');
       return getBookmarks(userId);
     }
     
+    console.log(`Performing search for: "${searchTerm}" for user ${userId}`);
     const bookmarksCollection = collection(db, getUserBookmarksPath(userId));
     const allBookmarks = await getDocs(bookmarksCollection);
+    console.log(`Retrieved ${allBookmarks.docs.length} bookmarks to search through`);
     
     // Search is case insensitive
     const normalizedSearchTerm = searchTerm.toLowerCase().trim();
@@ -614,14 +644,19 @@ export const searchBookmarks = async (userId: string, searchTerm: string): Promi
       } as Bookmark))
       .filter(bookmark => {
         // Search in title, URL, notes, and tags
-        const titleMatch = bookmark.title?.toLowerCase().includes(normalizedSearchTerm);
-        const urlMatch = bookmark.url?.toLowerCase().includes(normalizedSearchTerm);
-        const notesMatch = bookmark.notes?.toLowerCase().includes(normalizedSearchTerm);
-        const tagsMatch = bookmark.tags?.some(tag => tag.toLowerCase().includes(normalizedSearchTerm));
+        const titleMatch = bookmark.title?.toLowerCase().includes(normalizedSearchTerm) || false;
+        const urlMatch = bookmark.url?.toLowerCase().includes(normalizedSearchTerm) || false;
+        const notesMatch = bookmark.notes?.toLowerCase().includes(normalizedSearchTerm) || false;
+        const tagsMatch = bookmark.tags?.some(tag => tag.toLowerCase().includes(normalizedSearchTerm)) || false;
         
-        return titleMatch || urlMatch || notesMatch || tagsMatch;
+        // Also check partial word matches
+        const titleWords = bookmark.title?.toLowerCase().split(/\s+/) || [];
+        const titleWordsMatch = titleWords.some(word => word.startsWith(normalizedSearchTerm));
+        
+        return titleMatch || urlMatch || notesMatch || tagsMatch || titleWordsMatch;
       });
     
+    console.log(`Search found ${filteredBookmarks.length} matches for "${searchTerm}"`);
     return filteredBookmarks;
   } catch (error) {
     console.error("Error searching bookmarks:", error);

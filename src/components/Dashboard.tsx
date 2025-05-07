@@ -248,6 +248,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         onAddBookmark={() => setIsAddModalOpen(true)}
         activeView={activeView}
         onViewChange={setActiveView}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
       />
 
       {/* Main Layout */}
@@ -277,11 +279,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                   <h1 className="text-h1 font-semibold text-gray-900 dark:text-white">
                     {selectedCategory === 'favorites' 
                       ? 'Favorite Bookmarks'
-                      : selectedCategory !== 'all' && selectedCategory
-                        ? `Collection: ${categories.find(cat => cat.id === selectedCategory)?.name || 'Unknown Collection'}` 
-                        : selectedTags.length > 0 
-                          ? `Tags: ${selectedTags.join(', ')}` 
-                          : 'All Bookmarks'}
+                      : selectedCategory === 'recent'
+                        ? 'Recently Added Bookmarks'
+                        : selectedCategory !== 'all' && selectedCategory
+                          ? `Collection: ${categories.find(cat => cat.id === selectedCategory)?.name || 'Unknown Collection'}` 
+                          : selectedTags.length > 0 
+                            ? `Tags: ${selectedTags.join(', ')}` 
+                            : 'All Bookmarks'}
                   </h1>
                   <p className="text-gray-600 dark:text-gray-400 mt-1">
                     {filteredBookmarks.length} {filteredBookmarks.length === 1 ? 'bookmark' : 'bookmarks'} {searchQuery ? `matching "${searchQuery}"` : ''}
@@ -369,6 +373,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           onAdd={handleAddBookmark}
           userId={user.uid}
           editBookmark={editBookmark || undefined}
+          currentCategory={selectedCategory !== 'all' && 
+                           selectedCategory !== 'favorites' && 
+                           selectedCategory !== 'recent' ? 
+                           selectedCategory : undefined}
         />
       )}
     </div>

@@ -14,6 +14,8 @@ interface TopBarProps {
   onAddBookmark: () => void;
   activeView: ViewType;
   onViewChange: (view: ViewType) => void;
+  searchQuery?: string;
+  setSearchQuery?: (query: string) => void;
 }
 
 const TopBar: React.FC<TopBarProps> = ({
@@ -22,13 +24,25 @@ const TopBar: React.FC<TopBarProps> = ({
   onMenuToggle,
   activeView,
   onViewChange,
+  onAddBookmark,
+  searchQuery: externalSearchQuery = '',
+  setSearchQuery: externalSetSearchQuery,
 }) => {
   const { isDarkMode, toggleDarkMode } = useTheme();
   const { logOut } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [internalSearchQuery, setInternalSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  
+  const actualSearchQuery = externalSetSearchQuery ? externalSearchQuery : internalSearchQuery;
+  const setActualSearchQuery = (query: string) => {
+    if (externalSetSearchQuery) {
+      externalSetSearchQuery(query);
+    } else {
+      setInternalSearchQuery(query);
+    }
+  };
   
   const searchRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -109,18 +123,31 @@ const TopBar: React.FC<TopBarProps> = ({
             </div>
             <input
               type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={actualSearchQuery}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                console.log('Search query changed to:', newValue);
+                setActualSearchQuery(newValue);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  console.log('Search initiated for:', actualSearchQuery);
+                  e.preventDefault();
+                }
+              }}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
               placeholder="Search bookmarks (Ctrl+K)..."
               className="block w-full pl-11 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-primary-500 dark:focus:border-primary-400 transition-colors duration-200"
             />
-            {searchQuery && (
+            {actualSearchQuery && (
               <div className="absolute inset-y-0 right-1 px-2 pr-3.5 flex items-center">
                 <button
                   className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => {
+                    setActualSearchQuery('');
+                    console.log('Search cleared');
+                  }}
                 >
                   <Icon name="close" size="sm" />
                 </button>

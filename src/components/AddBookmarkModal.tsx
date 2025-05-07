@@ -10,13 +10,15 @@ interface AddBookmarkModalProps {
   onAdd: (bookmark: Omit<Bookmark, 'id' | 'createdAt' | 'updatedAt' | 'position' | 'clickCount'>) => void;
   userId: string;
   editBookmark?: Bookmark; // Optional prop for editing existing bookmark
+  currentCategory?: string; // Add this prop to pass the currently selected category
 }
 
 const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
   onClose,
   onAdd,
   userId,
-  editBookmark
+  editBookmark,
+  currentCategory
 }) => {
   // Get categories and tags from hooks
   const { categories } = useCategories(userId);
@@ -26,7 +28,7 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
   const [url, setUrl] = useState<string>(editBookmark?.url || '');
   const [title, setTitle] = useState<string>(editBookmark?.title || '');
   const [description, setDescription] = useState<string>(editBookmark?.notes || '');
-  const [category, setCategory] = useState<string>(editBookmark?.category || '');
+  const [category, setCategory] = useState<string>(editBookmark?.category || currentCategory || '');
   const [tags, setTags] = useState<string[]>(editBookmark?.tags || []);
   const [newTag, setNewTag] = useState<string>('');
   const [imageUrl, setImageUrl] = useState<string>(editBookmark?.imageUrl || '');
@@ -58,6 +60,28 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
       fetchMetadata();
     }
   }, [url]);
+
+  // When the modal opens, ensure a default category is selected
+  useEffect(() => {
+    // Set default category if none selected and not in edit mode
+    if (!editBookmark && !category && categories.length > 0) {
+      // If we have a currentCategory and it exists in the categories, use it
+      if (currentCategory && categories.some(c => c.id === currentCategory)) {
+        console.log(`Setting category to current selection: ${currentCategory}`);
+        setCategory(currentCategory);
+      } else {
+        // Find General category or use the first one
+        const generalCategory = categories.find(c => c.name === 'General');
+        if (generalCategory) {
+          console.log(`Setting default category to General: ${generalCategory.id}`);
+          setCategory(generalCategory.id);
+        } else {
+          console.log(`Setting default category to first available: ${categories[0].id} (${categories[0].name})`);
+          setCategory(categories[0].id);
+        }
+      }
+    }
+  }, [categories, category, editBookmark, currentCategory]);
 
   // Handle closing modal with escape key and click outside
   useEffect(() => {
@@ -253,6 +277,16 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
       setError('Title is required');
       return;
     }
+
+    // Ensure category is set (use General if none selected)
+    let finalCategory = category;
+    if (!finalCategory && categories.length > 0) {
+      // Find "General" category or use the first one
+      const generalCat = categories.find(cat => cat.name === "General")?.id || categories[0].id;
+      finalCategory = generalCat;
+      setCategory(generalCat);
+      console.log(`No category selected, defaulting to: ${generalCat}`);
+    }
     
     setIsLoading(true);
     setError(null);
@@ -262,12 +296,14 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
         url,
         title,
         notes: description,
-        category,
+        category: finalCategory, // Use the guaranteed category
         tags,
         imageUrl,
-        favicon
+        favicon,
+        isFavorite: false // Set default value for favorite status
       };
       
+      console.log('Submitting bookmark with data:', bookmarkData);
       await onAdd(bookmarkData);
     } catch (error) {
       console.error('Error saving bookmark:', error);
@@ -318,11 +354,11 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
   const renderStepContent = () => {
     switch (activeStep) {
       case 1:
-  return (
-          <div className="space-y-4">
+        return (
+          <div className="space-y-5">
             <div>
-              <label htmlFor="url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                URL
+              <label htmlFor="url" className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Website URL
               </label>
               <div className="relative rounded-md shadow-sm">
                 <input
@@ -332,23 +368,23 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="https://example.com"
-                  className="block w-full pl-4 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white transition-all duration-200"
+                  className="block w-full pl-4 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white transition-all duration-200"
                   autoFocus
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                   <Icon name="search" className="h-5 w-5 text-gray-400" />
                 </div>
               </div>
-              <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 Enter the URL of the website you want to bookmark
               </p>
-        </div>
+            </div>
         
-            <div className="flex justify-between pt-4">
+            <div className="flex justify-between pt-5">
               <Button
                 variant="tertiary"
                 onClick={handleClose}
-                className="transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="px-5 py-2.5 text-base transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 Cancel
               </Button>
@@ -357,7 +393,7 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                 onClick={fetchMetadata}
                 isLoading={isRetrieving}
                 disabled={!url.trim() || isRetrieving}
-                className="transition-all duration-200 transform hover:scale-105"
+                className="px-5 py-2.5 text-base transition-all duration-200 transform hover:scale-105"
               >
                 {editBookmark ? 'Update Details' : 'Fetch Details'}
               </Button>
@@ -367,48 +403,48 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
       
       case 2:
         return (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {/* URL */}
             <div>
-              <label htmlFor="url-preview" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="url-preview" className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                 URL
-            </label>
-              <div className="flex items-center rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 bg-gray-50 dark:bg-gray-700">
+              </label>
+              <div className="flex items-center rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-3 bg-gray-50 dark:bg-gray-700">
                 {favicon && (
                   <img 
                     src={favicon} 
                     alt="" 
-                    className="w-5 h-5 mr-2 flex-shrink-0 rounded-sm" 
+                    className="w-6 h-6 mr-3 flex-shrink-0 rounded-sm" 
                     onError={(e) => (e.currentTarget.style.display = 'none')}
                   />
                 )}
-              <input
+                <input
                   type="url"
                   id="url-preview"
-                value={url}
+                  value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  className="block w-full bg-transparent border-none focus:ring-0 focus:outline-none dark:text-white"
+                  className="block w-full bg-transparent border-none focus:ring-0 focus:outline-none dark:text-white text-base"
                 />
+              </div>
             </div>
-          </div>
           
             {/* Title */}
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="title" className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Title
-            </label>
-            <input
-              type="text"
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-                className="block w-full border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white py-2 px-3 transition-all duration-200"
+              </label>
+              <input
+                type="text"
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="block w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white py-3 px-4 transition-all duration-200 text-base"
               />
             </div>
             
             {/* Description */}
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="description" className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Description (optional)
               </label>
               <textarea
@@ -416,95 +452,103 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                className="block w-full border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white resize-none py-2 px-3 transition-all duration-200"
-            />
-          </div>
+                className="block w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white resize-none py-3 px-4 transition-all duration-200 text-base"
+              />
+            </div>
           
             {/* Category */}
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Category
-            </label>
-            <select
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-                className="block w-full border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white py-2 pl-3 pr-10 transition-all duration-200"
-            >
+              <label htmlFor="category" className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Category
+              </label>
+              <select
+                id="category"
+                value={category}
+                onChange={(e) => {
+                  console.log(`Category changed to: ${e.target.value}`);
+                  setCategory(e.target.value);
+                }}
+                className="block w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white py-3 px-4 transition-all duration-200 text-base"
+              >
                 <option value="">Select a category</option>
                 {categories.map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
-          </div>
-          
+                ))}
+              </select>
+              {!category && (
+                <p className="mt-2 text-sm text-amber-500">
+                  Bookmark will be saved to General if no category is selected
+                </p>
+              )}
+            </div>
+            
             {/* Tags */}
             <div>
-              <label htmlFor="tags" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Tags
-            </label>
-              <div className="flex flex-wrap gap-2 mb-2">
+              <label htmlFor="tags" className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Tags
+              </label>
+              <div className="flex flex-wrap gap-2 mb-3">
                 {tags.map(tag => (
-                <span
-                  key={tag}
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300"
-                >
-                  {tag}
-                  <button
-                    type="button"
-                      className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full text-primary-400 hover:text-primary-600 dark:text-primary-300 dark:hover:text-primary-100 focus:outline-none"
-                      onClick={() => removeTag(tag)}
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300"
                   >
+                    {tag}
+                    <button
+                      type="button"
+                      className="ml-2 inline-flex items-center justify-center h-5 w-5 rounded-full text-primary-400 hover:text-primary-600 dark:text-primary-300 dark:hover:text-primary-100 focus:outline-none"
+                      onClick={() => removeTag(tag)}
+                    >
                       <Icon name="close" size="sm" />
-                  </button>
-                </span>
-              ))}
-            </div>
+                    </button>
+                  </span>
+                ))}
+              </div>
               
-            <div className="flex">
-              <input
-                type="text"
-                id="tags"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
+              <div className="flex">
+                <input
+                  type="text"
+                  id="tags"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                   placeholder="Add a tag..."
-                  className="block flex-1 border border-gray-300 dark:border-gray-600 rounded-l-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white py-2 px-3 transition-all duration-200"
-              />
-              <button
-                type="button"
+                  className="block flex-1 border border-gray-300 dark:border-gray-600 rounded-l-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white py-3 px-4 transition-all duration-200 text-base"
+                />
+                <button
+                  type="button"
                   onClick={addTag}
                   disabled={!newTag.trim()}
-                  className="bg-primary-600 text-white px-3 py-2 rounded-r-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Add
-              </button>
-            </div>
+                  className="bg-primary-600 text-white px-4 py-3 rounded-r-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                >
+                  Add
+                </button>
+              </div>
               
               {tagSuggestions.length > 0 && (
-              <div className="mt-2">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Suggested tags:</p>
+                <div className="mt-3">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Suggested tags:</p>
                   <div className="flex flex-wrap gap-2">
                     {tagSuggestions.map(tag => (
-                    <button
-                      key={tag}
-                      type="button"
+                      <button
+                        key={tag}
+                        type="button"
                         onClick={() => addSuggestedTag(tag)}
-                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
-                    >
-                        <Icon name="plus" size="sm" className="mr-1" />
-                      {tag}
-                    </button>
-                  ))}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
+                      >
+                        <Icon name="plus" size="sm" className="mr-1.5" />
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
           
             {/* Thumbnail */}
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300">
                   Thumbnail
                 </label>
                 <div className="flex items-center">
@@ -513,49 +557,49 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                     id="auto-image"
                     checked={!useCustomImage}
                     onChange={() => setUseCustomImage(false)}
-                    className="mr-1"
+                    className="mr-1.5"
                   />
-                  <label htmlFor="auto-image" className="mr-4 text-xs text-gray-600 dark:text-gray-400">
+                  <label htmlFor="auto-image" className="mr-4 text-sm text-gray-600 dark:text-gray-400">
                     Auto-fetch
-            </label>
+                  </label>
                   
                   <input
                     type="radio"
                     id="custom-image"
                     checked={useCustomImage}
                     onChange={() => setUseCustomImage(true)}
-                    className="mr-1"
+                    className="mr-1.5"
                   />
-                  <label htmlFor="custom-image" className="text-xs text-gray-600 dark:text-gray-400">
+                  <label htmlFor="custom-image" className="text-sm text-gray-600 dark:text-gray-400">
                     Custom upload
                   </label>
                 </div>
-          </div>
+              </div>
           
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md hover:border-primary-500 dark:hover:border-primary-500 transition-colors duration-200">
+              <div className="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg hover:border-primary-500 dark:hover:border-primary-500 transition-colors duration-200">
                 {imageUrl ? (
                   <div className="text-center w-full">
                     <img 
                       src={imageUrl} 
                       alt={title} 
-                      className="mx-auto h-32 object-cover rounded-md mb-2"
+                      className="mx-auto h-40 object-cover rounded-lg mb-3"
                       onError={() => setImageUrl('')}
                     />
                     
                     {useCustomImage && (
-            <button
-              type="button"
+                      <button
+                        type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
+                        className="mt-2 inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
                       >
                         Change image
                       </button>
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-1 text-center">
+                  <div className="space-y-2 text-center">
                     <div className="flex justify-center">
-                      <Icon name="bookmark" size="lg" className="text-gray-400" />
+                      <Icon name="bookmark" size="lg" className="text-gray-400 h-12 w-12" />
                     </div>
                     <div className="flex text-sm text-gray-600 dark:text-gray-400">
                       <label
@@ -586,17 +630,17 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
             </div>
             
             {error && (
-              <div className="bg-error-50 dark:bg-error-900/30 text-error-700 dark:text-error-300 p-3 rounded-md text-sm flex items-start">
-                <Icon name="close" className="flex-shrink-0 h-5 w-5 mr-2 text-error-500" />
+              <div className="bg-error-50 dark:bg-error-900/30 text-error-700 dark:text-error-300 p-4 rounded-lg text-sm flex items-start">
+                <Icon name="close" className="flex-shrink-0 h-5 w-5 mr-3 text-error-500 mt-0.5" />
                 <span>{error}</span>
               </div>
             )}
             
-            <div className="flex justify-between pt-4">
+            <div className="flex justify-between pt-5">
               <Button
                 variant="secondary" 
                 onClick={() => setActiveStep(1)}
-                className="transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="px-5 py-2.5 text-base transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 Back
               </Button>
@@ -604,16 +648,16 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                 <Button
                   variant="tertiary"
                   onClick={handleClose}
-                  className="transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              Cancel
+                  className="px-5 py-2.5 text-base transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  Cancel
                 </Button>
                 <Button
                   variant="primary"
                   onClick={handleSubmit}
                   isLoading={isLoading}
                   disabled={!url.trim() || !title.trim() || isLoading}
-                  className="transition-all duration-200 transform hover:scale-105"
+                  className="px-5 py-2.5 text-base transition-all duration-200 transform hover:scale-105"
                 >
                   {editBookmark ? 'Update Bookmark' : 'Save Bookmark'}
                 </Button>
@@ -641,25 +685,29 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
         {/* Modal panel */}
         <div 
           ref={modalRef}
-          className={`relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg ${
+          className={`relative transform overflow-hidden rounded-xl bg-white dark:bg-gray-800 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg ${
             isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
           }`}
         >
           {/* Modal header */}
-          <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700 flex items-center justify-between border-b border-gray-200 dark:border-gray-600">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+          <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 flex items-center justify-between border-b border-gray-200 dark:border-gray-600">
+            <h3 className="text-xl font-medium text-gray-900 dark:text-white">
               {editBookmark ? 'Edit Bookmark' : 'Add New Bookmark'}
             </h3>
             <button
               onClick={handleClose}
-              className="rounded-full h-8 w-8 flex items-center justify-center text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="rounded-full h-10 w-10 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
+              aria-label="Close"
             >
-              <Icon name="close" />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
             </button>
           </div>
           
           {/* Modal content */}
-          <div className="px-4 pt-5 pb-5 sm:p-6">
+          <div className="px-6 pt-6 pb-6 sm:px-8">
             {renderStepContent()}
           </div>
         </div>

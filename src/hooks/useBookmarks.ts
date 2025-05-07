@@ -50,10 +50,13 @@ export const useBookmarks = (userId: string) => {
     
     setIsSearching(true);
     try {
+      console.log(`Searching for "${query}" among ${bookmarks.length} bookmarks`);
       const results = await searchBookmarksInDb(userId, query);
+      console.log(`Search found ${results.length} results for query "${query}"`);
       return results;
     } catch (error) {
       console.error('Error searching bookmarks:', error);
+      // Return original bookmarks instead of empty results on error
       return bookmarks;
     } finally {
       setIsSearching(false);
@@ -66,26 +69,57 @@ export const useBookmarks = (userId: string) => {
       setIsLoading(true);
       let filtered = [...bookmarks];
       
+      console.log(`Starting filtering process with ${bookmarks.length} bookmarks`);
+      console.log(`Current filters - Category: ${selectedCategory}, Tags: ${selectedTags.join(', ')}, Search: ${searchQuery}`);
+      
+      // Log all bookmarks' categories for debugging
+      bookmarks.forEach(bookmark => {
+        console.log(`Bookmark ${bookmark.id}: category=${bookmark.category || 'none'}, title=${bookmark.title}`);
+      });
+      
       // If search query exists, use the search function
       if (searchQuery.trim().length > 0) {
+        console.log(`Filtering bookmarks by search query: "${searchQuery}"`);
         filtered = await performSearch(searchQuery);
       }
       
       // Filter by category, favorites, or recent
       if (selectedCategory === 'favorites') {
+        console.log('Filtering to show only favorites');
         filtered = filtered.filter(bookmark => bookmark.isFavorite === true);
+        console.log(`After favorites filter, ${filtered.length} bookmarks remain`);
       } else if (selectedCategory === 'recent') {
         // Sort by most recently added first (already done below, but keep only the most recent ones)
+        console.log('Filtering to show recent bookmarks');
         // No additional filtering needed as we'll sort by date below
       } else if (selectedCategory !== 'all' && selectedCategory) {
-        filtered = filtered.filter(bookmark => bookmark.category === selectedCategory);
+        console.log(`Filtering by category: ${selectedCategory}`);
+        
+        // First log matching bookmarks for debugging
+        const matchingBookmarks = filtered.filter(bookmark => bookmark.category === selectedCategory);
+        console.log(`Found ${matchingBookmarks.length} bookmarks in category ${selectedCategory}:`);
+        matchingBookmarks.forEach(bookmark => {
+          console.log(`- ${bookmark.title} (ID: ${bookmark.id}, category: ${bookmark.category})`);
+        });
+        
+        filtered = filtered.filter(bookmark => {
+          const matches = bookmark.category === selectedCategory;
+          if (!matches && bookmark.category) {
+            console.log(`Bookmark ${bookmark.id} has category ${bookmark.category}, not matching ${selectedCategory}`);
+          }
+          return matches;
+        });
+        
+        console.log(`After category filter, ${filtered.length} bookmarks remain`);
       }
       
       // Filter by tags
       if (selectedTags.length > 0) {
+        console.log(`Filtering by tags: ${selectedTags.join(', ')}`);
         filtered = filtered.filter(bookmark => 
           selectedTags.every(tag => bookmark.tags && bookmark.tags.includes(tag))
         );
+        console.log(`After tag filter, ${filtered.length} bookmarks remain`);
       }
       
       // Sort by most recently added
@@ -104,8 +138,10 @@ export const useBookmarks = (userId: string) => {
       // If showing recent bookmarks, limit to the 20 most recent
       if (selectedCategory === 'recent') {
         filtered = filtered.slice(0, 20);
+        console.log(`Limited to 20 recent bookmarks, ${filtered.length} bookmarks remain`);
       }
       
+      console.log(`Setting filtered bookmarks: ${filtered.length} results`);
       setFilteredBookmarks(filtered);
       setIsLoading(false);
     };
